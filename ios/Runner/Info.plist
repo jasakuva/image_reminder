@@ -16,6 +16,19 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>ImageReminder</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.example.picReminder</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>imagereminder</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>ImageReminder uses the camera so you can take photos for reminders.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -13,7 +13,8 @@ class SharedImageReceiver {
   final ValueNotifier<String?> sharedImagePath = ValueNotifier(null);
 
   Future<void> loadInitialSharedImage() async {
-    if (defaultTargetPlatform != TargetPlatform.android) {
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
       return;
     }
 
