@@ -50,11 +50,11 @@ class ReminderDetailScreen extends StatelessWidget {
                 RaceHeader(
                   title: reminder.notifyText,
                   subtitle: reminder.status == ReminderStatus.active
-                      ? 'Active reminder in race control'
+                      ? 'Active image reminder'
                       : 'Reminder completed',
                   icon: reminder.status == ReminderStatus.active
-                      ? Icons.speed_outlined
-                      : Icons.flag_outlined,
+                      ? Icons.notifications_active_outlined
+                      : Icons.check_circle_outline,
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -102,14 +102,14 @@ class ReminderDetailScreen extends StatelessWidget {
                 if (reminder.status == ReminderStatus.active) ...[
                   FilledButton.icon(
                     onPressed: () => _markCompleted(context),
-                    icon: const Icon(Icons.flag_outlined),
-                    label: const Text('Finish / mark done'),
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: const Text('Mark done'),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () => _showSnoozeOptions(context),
                     icon: const Icon(Icons.snooze_outlined),
-                    label: const Text('Pit stop / snooze'),
+                    label: const Text('Snooze / remind again'),
                   ),
                 ],
               ],

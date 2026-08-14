@@ -52,15 +52,15 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New pit stop')),
+      appBar: AppBar(title: const Text('New reminder')),
       body: RaceScaffoldBackground(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             const RaceHeader(
-              title: 'Set the signal',
-              subtitle: 'Picture, message, sound, then lights out',
-              icon: Icons.flag_outlined,
+              title: 'Create image reminder',
+              subtitle: 'Choose an image, message, sound, and time',
+              icon: Icons.add_photo_alternate_outlined,
             ),
             const SizedBox(height: 16),
             _ImageSelector(
@@ -100,8 +100,8 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
                       dimension: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.rocket_launch_outlined),
-              label: const Text('Start reminder'),
+                  : const Icon(Icons.notifications_active_outlined),
+              label: const Text('Save reminder'),
             ),
           ],
         ),

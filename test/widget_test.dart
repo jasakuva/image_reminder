@@ -6,8 +6,8 @@ void main() {
   testWidgets('shows empty reminder list', (tester) async {
     await tester.pumpWidget(PictureReminderApp(reminderStore: ReminderStore()));
 
-    expect(find.text('PIT REMINDER'), findsOneWidget);
-    expect(find.text('No reminders on the grid'), findsOneWidget);
+    expect(find.text('ImageReminder'), findsOneWidget);
+    expect(find.text('No image reminders yet'), findsOneWidget);
     expect(find.text('New reminder'), findsOneWidget);
   });
 }

@@ -14,7 +14,7 @@ class ReminderListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('PIT REMINDER')),
+      appBar: AppBar(title: const Text('ImageReminder')),
       body: RaceScaffoldBackground(
         child: ListenableBuilder(
           listenable: reminderStore,
@@ -33,7 +33,7 @@ class ReminderListScreen extends StatelessWidget {
                 if (index == 0) {
                   return RaceHeader(
                     title: '${reminders.length} reminders',
-                    subtitle: 'Picture tasks ready on the starting grid',
+                    subtitle: 'Your image reminders in one clear place',
                   );
                 }
 
@@ -86,13 +86,13 @@ class _EmptyReminderList extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.sports_motorsports_outlined,
+              Icons.image_outlined,
               size: 72,
               color: MotorsportColors.pitRed,
             ),
             const SizedBox(height: 16),
             Text(
-              'No reminders on the grid',
+              'No image reminders yet',
               style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
