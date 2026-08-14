@@ -21,7 +21,7 @@ class ReminderStore extends ChangeNotifier {
 
   List<PictureReminder> get reminders {
     final sorted = [..._reminders]
-      ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
     return List.unmodifiable(sorted);
   }
 
