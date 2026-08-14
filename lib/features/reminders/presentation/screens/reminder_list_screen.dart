@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/motorsport_theme.dart';
 import '../../data/reminder_store.dart';
+import '../../../settings/presentation/screens/settings_info_screen.dart';
 import 'create_reminder_screen.dart';
 import 'reminder_detail_screen.dart';
 import '../widgets/reminder_card.dart';
@@ -14,7 +15,22 @@ class ReminderListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ImageReminder')),
+      appBar: AppBar(
+        title: const Text('ImageReminder'),
+        actions: [
+          IconButton(
+            tooltip: 'Settings & info',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const SettingsInfoScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.settings_outlined),
+          ),
+        ],
+      ),
       body: RaceScaffoldBackground(
         child: ListenableBuilder(
           listenable: reminderStore,
