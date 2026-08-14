@@ -13,9 +13,14 @@ import '../../domain/reminder_sound_mode.dart';
 import '../../domain/reminder_status.dart';
 
 class CreateReminderScreen extends StatefulWidget {
-  const CreateReminderScreen({required this.reminderStore, super.key});
+  const CreateReminderScreen({
+    required this.reminderStore,
+    this.initialImagePath,
+    super.key,
+  });
 
   final ReminderStore reminderStore;
+  final String? initialImagePath;
 
   @override
   State<CreateReminderScreen> createState() => _CreateReminderScreenState();
@@ -31,6 +36,12 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
   DateTime _scheduledAt = DateTime.now().add(const Duration(hours: 1));
   ReminderSoundMode _soundMode = ReminderSoundMode.notification;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedImagePath = widget.initialImagePath;
+  }
 
   @override
   void dispose() {

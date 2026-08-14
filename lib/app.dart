@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'core/theme/motorsport_theme.dart';
 import 'features/notifications/data/local_notification_service.dart';
 import 'features/reminders/data/reminder_store.dart';
+import 'features/reminders/presentation/screens/create_reminder_screen.dart';
 import 'features/reminders/presentation/screens/reminder_detail_screen.dart';
 import 'features/reminders/presentation/screens/reminder_list_screen.dart';
+import 'features/share/data/shared_image_receiver.dart';
 
 class PictureReminderApp extends StatefulWidget {
   PictureReminderApp({
@@ -23,6 +25,7 @@ class PictureReminderApp extends StatefulWidget {
 
 class _PictureReminderAppState extends State<PictureReminderApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
+  final _sharedImageReceiver = SharedImageReceiver();
 
   @override
   void initState() {
@@ -30,9 +33,11 @@ class _PictureReminderAppState extends State<PictureReminderApp> {
     widget.notificationService.selectedReminderId.addListener(
       _openSelectedReminder,
     );
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _openSelectedReminder(),
-    );
+    _sharedImageReceiver.sharedImagePath.addListener(_openSharedImageReminder);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _openSelectedReminder();
+      _sharedImageReceiver.loadInitialSharedImage();
+    });
   }
 
   @override
@@ -40,6 +45,10 @@ class _PictureReminderAppState extends State<PictureReminderApp> {
     widget.notificationService.selectedReminderId.removeListener(
       _openSelectedReminder,
     );
+    _sharedImageReceiver.sharedImagePath.removeListener(
+      _openSharedImageReminder,
+    );
+    _sharedImageReceiver.sharedImagePath.dispose();
     super.dispose();
   }
 
@@ -71,6 +80,24 @@ class _PictureReminderAppState extends State<PictureReminderApp> {
         builder: (_) => ReminderDetailScreen(
           reminderStore: widget.reminderStore,
           reminderId: reminderId,
+        ),
+      ),
+    );
+  }
+
+  void _openSharedImageReminder() {
+    final imagePath = _sharedImageReceiver.sharedImagePath.value;
+    if (imagePath == null) {
+      return;
+    }
+
+    _sharedImageReceiver.clearSharedImage();
+
+    _navigatorKey.currentState?.push(
+      MaterialPageRoute<void>(
+        builder: (_) => CreateReminderScreen(
+          reminderStore: widget.reminderStore,
+          initialImagePath: imagePath,
         ),
       ),
     );
