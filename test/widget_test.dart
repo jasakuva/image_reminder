@@ -20,7 +20,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Settings & Info'), findsOneWidget);
-    expect(find.text('JASAPRT image reminder software'), findsOneWidget);
+    expect(find.text('JASAPART image reminder software'), findsOneWidget);
     expect(find.text('Version information'), findsOneWidget);
   });
 }

@@ -2,7 +2,7 @@ class AppBuildInfo {
   const AppBuildInfo._();
 
   static const appName = 'ImageReminder';
-  static const softwareName = 'JASAPRT image reminder software';
+  static const softwareName = 'JASAPART image reminder software';
   static const version = String.fromEnvironment(
     'APP_VERSION',
     defaultValue: '1.0.0',
