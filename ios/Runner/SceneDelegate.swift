@@ -4,7 +4,7 @@ import UIKit
 class SceneDelegate: FlutterSceneDelegate {
   override func sceneDidBecomeActive(_ scene: UIScene) {
     super.sceneDidBecomeActive(scene)
-    (UIApplication.shared.delegate as? AppDelegate)?.notifyFlutterAboutSharedImageWhenReady()
+    (UIApplication.shared.delegate as? AppDelegate)?.importCoordinator.handleSceneDidBecomeActive()
   }
 
   override func scene(
@@ -17,6 +17,8 @@ class SceneDelegate: FlutterSceneDelegate {
       return
     }
 
-    (UIApplication.shared.delegate as? AppDelegate)?.notifyFlutterAboutSharedImageWhenReady()
+    if let url = URLContexts.first(where: { $0.url.scheme == "imagereminder" })?.url {
+      (UIApplication.shared.delegate as? AppDelegate)?.importCoordinator.handleOpenURL(url)
+    }
   }
 }

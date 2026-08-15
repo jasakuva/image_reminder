@@ -5,10 +5,8 @@ import UIKit
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private let sharedImageChannelName = "com.jasapart.ireminder/shared_images"
   private let appGroupIdentifier = "group.com.jasapart.ireminder"
-  private let sharedImagePathKey = "sharedImagePath"
   private var sharedImageChannel: FlutterMethodChannel?
-  private var pendingDeliveryWorkItem: DispatchWorkItem?
-  private let maxDeliveryAttempts = 10
+  lazy var importCoordinator = ImportCoordinator(appGroupIdentifier: appGroupIdentifier)
 
   override func application(
     _ application: UIApplication,
@@ -19,13 +17,13 @@ import UIKit
       didFinishLaunchingWithOptions: launchOptions
     )
     configureSharedImageChannel()
-    notifyFlutterAboutSharedImageWhenReady()
+    importCoordinator.handleAppLaunch()
     return didFinishLaunching
   }
 
   override func applicationDidBecomeActive(_ application: UIApplication) {
     super.applicationDidBecomeActive(application)
-    notifyFlutterAboutSharedImageWhenReady()
+    importCoordinator.handleSceneDidBecomeActive()
   }
 
   override func application(
@@ -34,7 +32,7 @@ import UIKit
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
     if url.scheme == "imagereminder" {
-      notifyFlutterAboutSharedImageWhenReady()
+      importCoordinator.handleOpenURL(url)
       return true
     }
 
@@ -58,6 +56,7 @@ import UIKit
       name: sharedImageChannelName,
       binaryMessenger: controller.binaryMessenger
     )
+    importCoordinator.attachFlutterChannel(sharedImageChannel!)
     sharedImageChannel?.setMethodCallHandler { [weak self] call, result in
       guard let self else {
         result(nil)
@@ -65,37 +64,19 @@ import UIKit
       }
 
       switch call.method {
-      case "getInitialSharedImage":
-        let sharedImagePath = self.peekSharedImagePath()
-        if sharedImagePath != nil {
-          self.clearSharedImagePath()
-        }
-        result(sharedImagePath)
+      case "getInitialSharedImport":
+        result(self.importCoordinator.fetchInitialPendingImport())
+      case "markFlutterReadyForSharedImport":
+        self.importCoordinator.markFlutterReadyForSharedImport()
+        result(nil)
+      case "markSharedImportConsumed":
+        let arguments = call.arguments as? [String: Any]
+        self.importCoordinator.markImportConsumed(id: arguments?["id"] as? String)
+        result(nil)
       default:
         result(FlutterMethodNotImplemented)
       }
     }
-  }
-
-  @discardableResult
-  func notifyFlutterAboutSharedImage() -> Bool {
-    configureSharedImageChannel()
-
-    guard sharedImageChannel != nil else {
-      return false
-    }
-
-    guard let sharedImagePath = peekSharedImagePath() else {
-      return false
-    }
-
-    sharedImageChannel?.invokeMethod("sharedImageReceived", arguments: sharedImagePath)
-    clearSharedImagePath()
-    return true
-  }
-
-  func notifyFlutterAboutSharedImageWhenReady() {
-    schedulePendingSharedImageDelivery(attempt: 0)
   }
 
   private func findFlutterViewController() -> FlutterViewController? {
@@ -116,45 +97,5 @@ import UIKit
     }
 
     return nil
-  }
-
-  private func schedulePendingSharedImageDelivery(attempt: Int) {
-    pendingDeliveryWorkItem?.cancel()
-
-    guard peekSharedImagePath() != nil else {
-      return
-    }
-
-    let workItem = DispatchWorkItem { [weak self] in
-      guard let self else {
-        return
-      }
-
-      if self.notifyFlutterAboutSharedImage() {
-        self.pendingDeliveryWorkItem = nil
-        return
-      }
-
-      guard attempt + 1 < self.maxDeliveryAttempts else {
-        self.pendingDeliveryWorkItem = nil
-        return
-      }
-
-      self.schedulePendingSharedImageDelivery(attempt: attempt + 1)
-    }
-
-    pendingDeliveryWorkItem = workItem
-    let delay = 0.2 + (Double(attempt) * 0.15)
-    DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
-  }
-
-  private func peekSharedImagePath() -> String? {
-    let defaults = UserDefaults(suiteName: appGroupIdentifier)
-    return defaults?.string(forKey: sharedImagePathKey)
-  }
-
-  private func clearSharedImagePath() {
-    let defaults = UserDefaults(suiteName: appGroupIdentifier)
-    defaults?.removeObject(forKey: sharedImagePathKey)
   }
 }
