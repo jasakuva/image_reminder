@@ -2,7 +2,7 @@ import MobileCoreServices
 import UIKit
 
 final class ShareViewController: UIViewController {
-  private let appGroupIdentifier = "group.com.example.picReminder"
+  private let appGroupIdentifier = "group.com.jasapart.ireminder"
   private let sharedImagePathKey = "sharedImagePath"
   private let appOpenUrl = URL(string: "imagereminder://shared-image")!
 

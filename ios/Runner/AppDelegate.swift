@@ -3,8 +3,8 @@ import UIKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
-  private let sharedImageChannelName = "com.example.pic_reminder/shared_images"
-  private let appGroupIdentifier = "group.com.example.picReminder"
+  private let sharedImageChannelName = "com.jasapart.ireminder/shared_images"
+  private let appGroupIdentifier = "group.com.jasapart.ireminder"
   private let sharedImagePathKey = "sharedImagePath"
   private var sharedImageChannel: FlutterMethodChannel?
 
