@@ -7,6 +7,8 @@ import UIKit
   private let appGroupIdentifier = "group.com.jasapart.ireminder"
   private let sharedImagePathKey = "sharedImagePath"
   private var sharedImageChannel: FlutterMethodChannel?
+  private var pendingDeliveryWorkItem: DispatchWorkItem?
+  private let maxDeliveryAttempts = 10
 
   override func application(
     _ application: UIApplication,
@@ -17,7 +19,13 @@ import UIKit
       didFinishLaunchingWithOptions: launchOptions
     )
     configureSharedImageChannel()
+    notifyFlutterAboutSharedImageWhenReady()
     return didFinishLaunching
+  }
+
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    super.applicationDidBecomeActive(application)
+    notifyFlutterAboutSharedImageWhenReady()
   }
 
   override func application(
@@ -58,31 +66,36 @@ import UIKit
 
       switch call.method {
       case "getInitialSharedImage":
-        result(self.takeSharedImagePath())
+        let sharedImagePath = self.peekSharedImagePath()
+        if sharedImagePath != nil {
+          self.clearSharedImagePath()
+        }
+        result(sharedImagePath)
       default:
         result(FlutterMethodNotImplemented)
       }
     }
   }
 
-  func notifyFlutterAboutSharedImage() {
+  @discardableResult
+  func notifyFlutterAboutSharedImage() -> Bool {
     configureSharedImageChannel()
 
     guard sharedImageChannel != nil else {
-      return
+      return false
     }
 
-    guard let sharedImagePath = takeSharedImagePath() else {
-      return
+    guard let sharedImagePath = peekSharedImagePath() else {
+      return false
     }
 
     sharedImageChannel?.invokeMethod("sharedImageReceived", arguments: sharedImagePath)
+    clearSharedImagePath()
+    return true
   }
 
   func notifyFlutterAboutSharedImageWhenReady() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-      self?.notifyFlutterAboutSharedImage()
-    }
+    schedulePendingSharedImageDelivery(attempt: 0)
   }
 
   private func findFlutterViewController() -> FlutterViewController? {
@@ -105,10 +118,43 @@ import UIKit
     return nil
   }
 
-  private func takeSharedImagePath() -> String? {
+  private func schedulePendingSharedImageDelivery(attempt: Int) {
+    pendingDeliveryWorkItem?.cancel()
+
+    guard peekSharedImagePath() != nil else {
+      return
+    }
+
+    let workItem = DispatchWorkItem { [weak self] in
+      guard let self else {
+        return
+      }
+
+      if self.notifyFlutterAboutSharedImage() {
+        self.pendingDeliveryWorkItem = nil
+        return
+      }
+
+      guard attempt + 1 < self.maxDeliveryAttempts else {
+        self.pendingDeliveryWorkItem = nil
+        return
+      }
+
+      self.schedulePendingSharedImageDelivery(attempt: attempt + 1)
+    }
+
+    pendingDeliveryWorkItem = workItem
+    let delay = 0.2 + (Double(attempt) * 0.15)
+    DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+  }
+
+  private func peekSharedImagePath() -> String? {
     let defaults = UserDefaults(suiteName: appGroupIdentifier)
-    let sharedImagePath = defaults?.string(forKey: sharedImagePathKey)
+    return defaults?.string(forKey: sharedImagePathKey)
+  }
+
+  private func clearSharedImagePath() {
+    let defaults = UserDefaults(suiteName: appGroupIdentifier)
     defaults?.removeObject(forKey: sharedImagePathKey)
-    return sharedImagePath
   }
 }

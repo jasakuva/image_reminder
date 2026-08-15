@@ -1,4 +1,4 @@
-import MobileCoreServices
+import UniformTypeIdentifiers
 import UIKit
 
 final class ShareViewController: UIViewController {
@@ -27,7 +27,7 @@ final class ShareViewController: UIViewController {
       return
     }
 
-    let imageTypeIdentifier = kUTTypeImage as String
+    let imageTypeIdentifier = UTType.image.identifier
     guard let imageProvider = attachments.first(where: {
       $0.hasItemConformingToTypeIdentifier(imageTypeIdentifier)
     }) else {
@@ -45,8 +45,7 @@ final class ShareViewController: UIViewController {
 
       DispatchQueue.main.async {
         if savedPath != nil {
-          self.openMainApp()
-          self.completeRequestAfterOpeningApp()
+          self.presentImportSavedAlert()
           return
         }
 
@@ -125,13 +124,28 @@ final class ShareViewController: UIViewController {
     }
   }
 
-  private func completeRequestAfterOpeningApp() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
-      self?.completeRequest()
-    }
-  }
-
   private func completeRequest() {
     extensionContext?.completeRequest(returningItems: nil)
+  }
+
+  private func presentImportSavedAlert() {
+    let alert = UIAlertController(
+      title: "Saved to ImageReminder",
+      message: "The screenshot was saved. Open ImageReminder to continue.",
+      preferredStyle: .alert
+    )
+
+    alert.addAction(
+      UIAlertAction(title: "Open App", style: .default) { [weak self] _ in
+        self?.openMainApp()
+      }
+    )
+    alert.addAction(
+      UIAlertAction(title: "Done", style: .cancel) { [weak self] _ in
+        self?.completeRequest()
+      }
+    )
+
+    present(alert, animated: true)
   }
 }
