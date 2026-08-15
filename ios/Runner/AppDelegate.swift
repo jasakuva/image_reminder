@@ -26,7 +26,7 @@ import UIKit
     options: [UIApplication.OpenURLOptionsKey: Any] = [:]
   ) -> Bool {
     if url.scheme == "imagereminder" {
-      notifyFlutterAboutSharedImage()
+      notifyFlutterAboutSharedImageWhenReady()
       return true
     }
 
@@ -41,7 +41,7 @@ import UIKit
   private func configureSharedImageChannel() {
     guard
       sharedImageChannel == nil,
-      let controller = window?.rootViewController as? FlutterViewController
+      let controller = findFlutterViewController()
     else {
       return
     }
@@ -67,11 +67,42 @@ import UIKit
 
   func notifyFlutterAboutSharedImage() {
     configureSharedImageChannel()
+
+    guard sharedImageChannel != nil else {
+      return
+    }
+
     guard let sharedImagePath = takeSharedImagePath() else {
       return
     }
 
     sharedImageChannel?.invokeMethod("sharedImageReceived", arguments: sharedImagePath)
+  }
+
+  func notifyFlutterAboutSharedImageWhenReady() {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+      self?.notifyFlutterAboutSharedImage()
+    }
+  }
+
+  private func findFlutterViewController() -> FlutterViewController? {
+    if let controller = window?.rootViewController as? FlutterViewController {
+      return controller
+    }
+
+    for scene in UIApplication.shared.connectedScenes {
+      guard let windowScene = scene as? UIWindowScene else {
+        continue
+      }
+
+      for window in windowScene.windows {
+        if let controller = window.rootViewController as? FlutterViewController {
+          return controller
+        }
+      }
+    }
+
+    return nil
   }
 
   private func takeSharedImagePath() -> String? {

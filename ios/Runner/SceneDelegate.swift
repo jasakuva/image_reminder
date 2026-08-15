@@ -12,6 +12,6 @@ class SceneDelegate: FlutterSceneDelegate {
       return
     }
 
-    (UIApplication.shared.delegate as? AppDelegate)?.notifyFlutterAboutSharedImage()
+    (UIApplication.shared.delegate as? AppDelegate)?.notifyFlutterAboutSharedImageWhenReady()
   }
 }

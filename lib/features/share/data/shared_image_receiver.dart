@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 
 class SharedImageReceiver {
   SharedImageReceiver() {
-    _channel.setMethodCallHandler(_handleMethodCall);
+    _platformChannel.setMethodCallHandler(_handleMethodCall);
   }
 
-  static const _channel = MethodChannel(
+  static const _androidChannel = MethodChannel(
     'com.example.pic_reminder/shared_images',
+  );
+  static const _iosChannel = MethodChannel(
+    'com.jasapart.ireminder/shared_images',
   );
 
   final ValueNotifier<String?> sharedImagePath = ValueNotifier(null);
@@ -18,9 +21,15 @@ class SharedImageReceiver {
       return;
     }
 
-    final imagePath = await _channel.invokeMethod<String?>(
-      'getInitialSharedImage',
-    );
+    final String? imagePath;
+    try {
+      imagePath = await _platformChannel.invokeMethod<String?>(
+        'getInitialSharedImage',
+      );
+    } on MissingPluginException {
+      return;
+    }
+
     if (imagePath == null || imagePath.isEmpty) {
       return;
     }
@@ -43,5 +52,11 @@ class SharedImageReceiver {
     }
 
     sharedImagePath.value = imagePath;
+  }
+
+  MethodChannel get _platformChannel {
+    return defaultTargetPlatform == TargetPlatform.iOS
+        ? _iosChannel
+        : _androidChannel;
   }
 }

@@ -5,9 +5,16 @@ final class ShareViewController: UIViewController {
   private let appGroupIdentifier = "group.com.jasapart.ireminder"
   private let sharedImagePathKey = "sharedImagePath"
   private let appOpenUrl = URL(string: "imagereminder://shared-image")!
+  private var didStartHandlingShare = false
 
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
+
+    guard !didStartHandlingShare else {
+      return
+    }
+
+    didStartHandlingShare = true
     handleSharedImage()
   }
 
@@ -39,7 +46,10 @@ final class ShareViewController: UIViewController {
       DispatchQueue.main.async {
         if savedPath != nil {
           self.openMainApp()
+          self.completeRequestAfterOpeningApp()
+          return
         }
+
         self.completeRequest()
       }
     }
@@ -94,7 +104,31 @@ final class ShareViewController: UIViewController {
   }
 
   private func openMainApp() {
-    extensionContext?.open(appOpenUrl)
+    extensionContext?.open(appOpenUrl) { [weak self] success in
+      if !success {
+        self?.openMainAppViaResponderChain()
+      }
+    }
+  }
+
+  private func openMainAppViaResponderChain() {
+    let openUrlSelector = NSSelectorFromString("openURL:")
+    var responder: UIResponder? = self
+
+    while let currentResponder = responder {
+      if currentResponder.responds(to: openUrlSelector) {
+        currentResponder.perform(openUrlSelector, with: appOpenUrl)
+        return
+      }
+
+      responder = currentResponder.next
+    }
+  }
+
+  private func completeRequestAfterOpeningApp() {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+      self?.completeRequest()
+    }
   }
 
   private func completeRequest() {
