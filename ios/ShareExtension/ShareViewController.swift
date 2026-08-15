@@ -3,19 +3,15 @@ import UIKit
 
 final class ShareViewController: UIViewController {
   private let appGroupIdentifier = "group.com.jasapart.ireminder"
+  private let sharedImagePathKey = "sharedImagePath"
+  private let appOpenUrl = URL(string: "imagereminder://shared-image")!
   private var didStartHandlingShare = false
-  private lazy var sharedImportStore = SharedImportStore(appGroupIdentifier: appGroupIdentifier)
-  private let activityIndicator = UIActivityIndicatorView(style: .large)
-  private let titleLabel = UILabel()
-  private let messageLabel = UILabel()
-  private let previewImageView = UIImageView()
-  private let openAppButton = UIButton(type: .system)
-  private let doneButton = UIButton(type: .system)
-  private var latestSavedImagePath: String?
+  private var didAttemptToOpenMainApp = false
+  private var isShowingImportSavedAlert = false
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    configureUI()
+    view.backgroundColor = .systemBackground
   }
 
   override func viewDidAppear(_ animated: Bool) {
@@ -30,8 +26,6 @@ final class ShareViewController: UIViewController {
   }
 
   private func handleSharedImage() {
-    setLoadingState()
-
     guard
       let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem,
       let attachments = extensionItem.attachments
@@ -52,18 +46,16 @@ final class ShareViewController: UIViewController {
       guard let self else { return }
 
       let savedPath = self.saveSharedImage(item)
-      if let savedPath, let sharedImport = self.createSharedImport(imagePath: savedPath) {
-        try? self.sharedImportStore.save(sharedImport)
+      if let savedPath {
+        UserDefaults(suiteName: self.appGroupIdentifier)?.set(savedPath, forKey: self.sharedImagePathKey)
       }
 
       DispatchQueue.main.async {
         if savedPath != nil {
-          self.latestSavedImagePath = savedPath
-          self.showImportReadyState(imagePath: savedPath!)
+          self.openMainApp()
           return
         }
 
-        self.messageLabel.text = "Could not import the shared image."
         self.completeRequest()
       }
     }
@@ -118,20 +110,33 @@ final class ShareViewController: UIViewController {
   }
 
   private func openMainApp() {
-    guard let sharedImport = sharedImportStore.pendingImport() else {
-      completeRequest()
+    guard !didAttemptToOpenMainApp else {
+      if !isShowingImportSavedAlert {
+        presentImportSavedAlert()
+      }
       return
     }
 
-    let appOpenUrl = URL(string: "imagereminder://import?id=\(sharedImport.id)")!
+    didAttemptToOpenMainApp = true
+
     extensionContext?.open(appOpenUrl) { [weak self] success in
+      guard let self else { return }
+
       if !success {
-        self?.openMainAppViaResponderChain(appOpenUrl)
+        self.openMainAppViaResponderChain()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+          if !self.isShowingImportSavedAlert {
+            self.presentImportSavedAlert()
+          }
+        }
+        return
       }
+
+      self.completeRequest()
     }
   }
 
-  private func openMainAppViaResponderChain(_ appOpenUrl: URL) {
+  private func openMainAppViaResponderChain() {
     let openUrlSelector = NSSelectorFromString("openURL:")
     var responder: UIResponder? = self
 
@@ -149,113 +154,32 @@ final class ShareViewController: UIViewController {
     extensionContext?.completeRequest(returningItems: nil)
   }
 
-  private func createSharedImport(imagePath: String) -> SharedImport? {
-    SharedImport(
-      id: UUID().uuidString,
-      imagePath: imagePath,
-      createdAt: Date().timeIntervalSince1970,
-      source: "share_extension"
+  private func presentImportSavedAlert() {
+    guard !isShowingImportSavedAlert else {
+      return
+    }
+
+    isShowingImportSavedAlert = true
+
+    let alert = UIAlertController(
+      title: "Saved to ImageReminder",
+      message: "The image was saved. If the app did not open automatically, close this sheet and open ImageReminder manually.",
+      preferredStyle: .alert
     )
-  }
 
-  private func configureUI() {
-    view.backgroundColor = .systemBackground
+    alert.addAction(
+      UIAlertAction(title: "Open App", style: .default) { [weak self] _ in
+        self?.isShowingImportSavedAlert = false
+        self?.completeRequest()
+      }
+    )
+    alert.addAction(
+      UIAlertAction(title: "Done", style: .cancel) { [weak self] _ in
+        self?.isShowingImportSavedAlert = false
+        self?.completeRequest()
+      }
+    )
 
-    activityIndicator.translatesAutoresizingMaskIntoConstraints = false
-    activityIndicator.startAnimating()
-
-    titleLabel.translatesAutoresizingMaskIntoConstraints = false
-    titleLabel.font = .systemFont(ofSize: 26, weight: .semibold)
-    titleLabel.textAlignment = .center
-    titleLabel.text = "ImageReminder"
-
-    messageLabel.translatesAutoresizingMaskIntoConstraints = false
-    messageLabel.font = .systemFont(ofSize: 16)
-    messageLabel.textColor = .secondaryLabel
-    messageLabel.numberOfLines = 0
-    messageLabel.textAlignment = .center
-
-    previewImageView.translatesAutoresizingMaskIntoConstraints = false
-    previewImageView.contentMode = .scaleAspectFit
-    previewImageView.layer.cornerRadius = 16
-    previewImageView.clipsToBounds = true
-    previewImageView.backgroundColor = .secondarySystemBackground
-    previewImageView.isHidden = true
-
-    openAppButton.translatesAutoresizingMaskIntoConstraints = false
-    openAppButton.configuration = .filled()
-    openAppButton.setTitle("Open App", for: .normal)
-    openAppButton.addTarget(self, action: #selector(openAppTapped), for: .touchUpInside)
-    openAppButton.isHidden = true
-
-    doneButton.translatesAutoresizingMaskIntoConstraints = false
-    doneButton.configuration = .bordered()
-    doneButton.setTitle("Done", for: .normal)
-    doneButton.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
-    doneButton.isHidden = true
-
-    [
-      activityIndicator,
-      titleLabel,
-      messageLabel,
-      previewImageView,
-      openAppButton,
-      doneButton,
-    ].forEach(view.addSubview)
-
-    NSLayoutConstraint.activate([
-      activityIndicator.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-      activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-
-      titleLabel.topAnchor.constraint(equalTo: activityIndicator.bottomAnchor, constant: 24),
-      titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-      titleLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-
-      messageLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
-      messageLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-      messageLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-
-      previewImageView.topAnchor.constraint(equalTo: messageLabel.bottomAnchor, constant: 24),
-      previewImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-      previewImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-      previewImageView.heightAnchor.constraint(equalTo: previewImageView.widthAnchor, multiplier: 0.75),
-
-      openAppButton.topAnchor.constraint(equalTo: previewImageView.bottomAnchor, constant: 24),
-      openAppButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-      openAppButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-
-      doneButton.topAnchor.constraint(equalTo: openAppButton.bottomAnchor, constant: 12),
-      doneButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-      doneButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
-    ])
-  }
-
-  private func setLoadingState() {
-    activityIndicator.startAnimating()
-    activityIndicator.isHidden = false
-    titleLabel.text = "ImageReminder"
-    messageLabel.text = "Importing shared screenshot…"
-    previewImageView.isHidden = true
-    openAppButton.isHidden = true
-    doneButton.isHidden = true
-  }
-
-  private func showImportReadyState(imagePath: String) {
-    activityIndicator.stopAnimating()
-    activityIndicator.isHidden = true
-    titleLabel.text = "Import Ready"
-    messageLabel.text = "Your screenshot was imported into ImageReminder. You can open the app now or finish here."
-    previewImageView.image = UIImage(contentsOfFile: imagePath)
-    previewImageView.isHidden = false
-    openAppButton.isHidden = false
-    doneButton.isHidden = false
-  }
-
-  @objc private func openAppTapped() {
-    openMainApp()
-  }
-
-  @objc private func doneTapped() {
-    completeRequest()
+    present(alert, animated: true)
   }
 }
