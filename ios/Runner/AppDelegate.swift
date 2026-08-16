@@ -77,7 +77,11 @@ private final class RunnerPendingReminderStore {
       return []
     }
 
+    if let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) {
+      print("[Runner] App Group container: \(containerURL.path)")
+    }
     print("[Runner] Reading PendingReminders from: \(directoryURL.path)")
+    print("[Runner] PendingReminders directory: \(directoryURL.path)")
 
     guard let fileURLs = try? fileManager.contentsOfDirectory(
       at: directoryURL,
@@ -91,11 +95,19 @@ private final class RunnerPendingReminderStore {
     print("[Runner] Found \(fileURLs.count) pending reminder file(s)")
 
     return fileURLs.compactMap { fileURL in
-      guard
-        let data = try? Data(contentsOf: fileURL),
-        let reminder = try? JSONDecoder().decode(RunnerPendingReminder.self, from: data)
-      else {
-        print("[Runner] Failed to decode pending reminder file: \(fileURL.lastPathComponent)")
+      let data: Data
+      do {
+        data = try Data(contentsOf: fileURL)
+      } catch {
+        print("[Runner] Failed to read pending reminder file: \(fileURL.lastPathComponent) error=\(error)")
+        return nil
+      }
+
+      let reminder: RunnerPendingReminder
+      do {
+        reminder = try JSONDecoder().decode(RunnerPendingReminder.self, from: data)
+      } catch {
+        print("[Runner] Failed to decode pending reminder file: \(fileURL.lastPathComponent) error=\(error)")
         return nil
       }
 
@@ -121,8 +133,10 @@ private final class RunnerPendingReminderStore {
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private let sharedImageChannelName = "com.jasapart.ireminder/shared_images"
+  private let sharedImagePluginKey = "ImageReminderSharedImages"
   private var sharedImageChannel: FlutterMethodChannel?
   private let pendingReminderStore = RunnerPendingReminderStore()
+  private var sharedImageRegistrar: FlutterPluginRegistrar?
 
   override func application(
     _ application: UIApplication,
@@ -132,7 +146,6 @@ private final class RunnerPendingReminderStore {
       application,
       didFinishLaunchingWithOptions: launchOptions
     )
-    configureSharedImageChannel()
     return didFinishLaunching
   }
 
@@ -142,21 +155,22 @@ private final class RunnerPendingReminderStore {
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    sharedImageRegistrar = engineBridge.pluginRegistry.registrar(
+      forPlugin: sharedImagePluginKey
+    )
     configureSharedImageChannel()
   }
 
   private func configureSharedImageChannel() {
-    guard
-      sharedImageChannel == nil,
-      let controller = findFlutterViewController()
-    else {
+    guard sharedImageChannel == nil, let registrar = sharedImageRegistrar else {
       return
     }
 
     sharedImageChannel = FlutterMethodChannel(
       name: sharedImageChannelName,
-      binaryMessenger: controller.binaryMessenger
+      binaryMessenger: registrar.messenger()
     )
+    print("[Runner] shared_images MethodChannel registered")
     sharedImageChannel?.setMethodCallHandler { [weak self] call, result in
       guard let self else {
         result(nil)
@@ -165,6 +179,7 @@ private final class RunnerPendingReminderStore {
 
       switch call.method {
       case "fetchPendingReminderImports":
+        print("[Runner] fetchPendingReminderImports called")
         result(self.pendingReminderStore.fetchAll())
       case "markPendingReminderImported":
         let arguments = call.arguments as? [String: Any]
@@ -174,25 +189,5 @@ private final class RunnerPendingReminderStore {
         result(FlutterMethodNotImplemented)
       }
     }
-  }
-
-  private func findFlutterViewController() -> FlutterViewController? {
-    if let controller = window?.rootViewController as? FlutterViewController {
-      return controller
-    }
-
-    for scene in UIApplication.shared.connectedScenes {
-      guard let windowScene = scene as? UIWindowScene else {
-        continue
-      }
-
-      for window in windowScene.windows {
-        if let controller = window.rootViewController as? FlutterViewController {
-          return controller
-        }
-      }
-    }
-
-    return nil
   }
 }

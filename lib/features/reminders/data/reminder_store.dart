@@ -69,6 +69,7 @@ class ReminderStore extends ChangeNotifier {
       return;
     }
 
+    debugPrint('[ReminderStore] starting pending import');
     await _sharedImageReceiver.loadInitialSharedImage();
     final pendingImports = _sharedImageReceiver.pendingReminderImports.value;
     debugPrint('[ReminderStore] Pending iOS reminder imports: ${pendingImports.length}');
@@ -77,11 +78,12 @@ class ReminderStore extends ChangeNotifier {
     }
 
     var didChange = false;
+    final filesToDelete = <String>[];
     for (final pendingImport in pendingImports) {
       debugPrint('[ReminderStore] Importing pending reminder id=${pendingImport.id} file=${pendingImport.fileName}');
       if (findById(pendingImport.id) != null) {
         debugPrint('[ReminderStore] Reminder already exists, marking imported: ${pendingImport.id}');
-        await _sharedImageReceiver.markPendingReminderImported(pendingImport.fileName);
+        filesToDelete.add(pendingImport.fileName);
         continue;
       }
 
@@ -108,12 +110,16 @@ class ReminderStore extends ChangeNotifier {
       } else {
         debugPrint('[ReminderStore] Native notification already scheduled for: ${pendingImport.id}');
       }
-      await _sharedImageReceiver.markPendingReminderImported(pendingImport.fileName);
+      filesToDelete.add(pendingImport.fileName);
       didChange = true;
     }
 
     if (didChange) {
       await _saveAndNotify();
+    }
+
+    for (final fileName in filesToDelete) {
+      await _sharedImageReceiver.markPendingReminderImported(fileName);
     }
   }
 

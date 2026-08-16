@@ -109,7 +109,15 @@ class SharedImageReceiver {
       imagePath = await _platformChannel.invokeMethod<String?>(
         'getInitialSharedImage',
       );
-    } on MissingPluginException {
+    } on MissingPluginException catch (error) {
+      debugPrint(
+        '[SharedImageReceiver] ERROR: iOS shared_images MethodChannel is not registered. $error',
+      );
+      return;
+    } on PlatformException catch (error) {
+      debugPrint(
+        '[SharedImageReceiver] PlatformException while loading shared import: ${error.code} ${error.message}',
+      );
       return;
     }
 

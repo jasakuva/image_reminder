@@ -70,6 +70,11 @@ private final class PendingReminderStore {
   }
 
   func save(_ reminder: PendingReminder) throws {
+    if let containerURL = sharedContainerURL() {
+      print("[ShareExtension] App Group container: \(containerURL.path)")
+    }
+    print("[ShareExtension] Pending reminder: \(String(data: try JSONEncoder().encode(reminder), encoding: .utf8) ?? "<invalid json>")")
+
     let fileURL = try pendingRemindersDirectoryURL().appendingPathComponent(
       "\(reminder.id).json",
       isDirectory: false
@@ -77,6 +82,10 @@ private final class PendingReminderStore {
     let data = try JSONEncoder().encode(reminder)
     try data.write(to: fileURL, options: .atomic)
     print("[ShareExtension] Saved pending reminder file at: \(fileURL.path)")
+    let fileExists = FileManager.default.fileExists(atPath: fileURL.path)
+    let readBackData = try? Data(contentsOf: fileURL)
+    let readBackMatches = readBackData == data
+    print("[ShareExtension] JSON write verified: \(fileExists && readBackMatches)")
   }
 }
 
