@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 
@@ -8,20 +9,63 @@ import '../../domain/picture_reminder.dart';
 import '../../domain/reminder_sound_mode.dart';
 import '../../domain/reminder_status.dart';
 
-class ReminderCard extends StatelessWidget {
+class ReminderCard extends StatefulWidget {
   const ReminderCard({required this.reminder, required this.onTap, super.key});
 
   final PictureReminder reminder;
   final VoidCallback onTap;
 
   @override
+  State<ReminderCard> createState() => _ReminderCardState();
+}
+
+class _ReminderCardState extends State<ReminderCard> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startRefreshTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant ReminderCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reminder.id != widget.reminder.id ||
+        oldWidget.reminder.status != widget.reminder.status ||
+        oldWidget.reminder.scheduledAt != widget.reminder.scheduledAt) {
+      _startRefreshTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startRefreshTimer() {
+    _refreshTimer?.cancel();
+    if (widget.reminder.status != ReminderStatus.active) {
+      return;
+    }
+
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final reminder = widget.reminder;
 
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         child: IntrinsicHeight(
           child: Row(
             children: [
@@ -32,7 +76,7 @@ class ReminderCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.file(
+                      Image.file(
                       File(reminder.imagePath),
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
@@ -84,9 +128,7 @@ class ReminderCard extends StatelessWidget {
                                 ? Icons.speed_outlined
                                 : Icons.flag_outlined,
                             text: reminder.status == ReminderStatus.active
-                                ? formatRelativeReminderTime(
-                                    reminder.scheduledAt,
-                                  )
+                                 ? formatRelativeReminderTime(reminder.scheduledAt)
                                 : 'Completed',
                             color: reminder.status == ReminderStatus.active
                                 ? MotorsportColors.pitRed

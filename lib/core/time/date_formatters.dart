@@ -3,12 +3,12 @@ import 'package:intl/intl.dart';
 final _dateTimeFormatter = DateFormat('EEE d MMM yyyy, HH:mm');
 
 String formatReminderDate(DateTime dateTime) {
-  return _dateTimeFormatter.format(dateTime);
+  return _dateTimeFormatter.format(dateTime.toLocal());
 }
 
 String formatRelativeReminderTime(DateTime dateTime) {
   final now = DateTime.now();
-  final difference = dateTime.difference(now);
+  final difference = dateTime.toLocal().difference(now);
 
   if (difference.isNegative) {
     return 'Due now';
