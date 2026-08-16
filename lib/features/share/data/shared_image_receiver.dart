@@ -1,27 +1,68 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-class SharedImport {
-  SharedImport({
+class PendingReminderImport {
+  PendingReminderImport({
+    required this.fileName,
     required this.id,
     required this.imagePath,
+    required this.scheduledAt,
     required this.createdAt,
+    required this.updatedAt,
+    required this.status,
+    required this.snoozeCount,
+    required this.notificationId,
+    required this.soundMode,
+    required this.notificationScheduled,
     required this.source,
+    this.title,
+    this.note,
+    this.completedAt,
+    this.lastSnoozedAt,
   });
 
+  final String fileName;
   final String id;
+  final String? title;
+  final String? note;
   final String imagePath;
+  final DateTime scheduledAt;
   final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? completedAt;
+  final String status;
+  final int snoozeCount;
+  final int notificationId;
+  final String soundMode;
+  final DateTime? lastSnoozedAt;
+  final bool notificationScheduled;
   final String source;
 
-  factory SharedImport.fromMap(Map<Object?, Object?> map) {
-    return SharedImport(
+  factory PendingReminderImport.fromMap(Map<Object?, Object?> map) {
+    DateTime? parseOptionalDate(Object? value) {
+      if (value is! String || value.isEmpty) {
+        return null;
+      }
+      return DateTime.parse(value);
+    }
+
+    return PendingReminderImport(
+      fileName: map['fileName'] as String,
       id: map['id'] as String,
+      title: map['title'] as String?,
+      note: map['note'] as String?,
       imagePath: map['imagePath'] as String,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        (((map['createdAt'] as num?) ?? 0) * 1000).round(),
-      ),
-      source: (map['source'] as String?) ?? 'unknown',
+      scheduledAt: DateTime.parse(map['scheduledAt'] as String),
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      completedAt: parseOptionalDate(map['completedAt']),
+      status: map['status'] as String? ?? 'active',
+      snoozeCount: (map['snoozeCount'] as num?)?.toInt() ?? 0,
+      notificationId: (map['notificationId'] as num?)?.toInt() ?? 0,
+      soundMode: map['soundMode'] as String? ?? 'notification',
+      lastSnoozedAt: parseOptionalDate(map['lastSnoozedAt']),
+      notificationScheduled: map['notificationScheduled'] as bool? ?? false,
+      source: map['source'] as String? ?? 'unknown',
     );
   }
 }
@@ -39,6 +80,8 @@ class SharedImageReceiver {
   );
 
   final ValueNotifier<String?> sharedImagePath = ValueNotifier(null);
+  final ValueNotifier<List<PendingReminderImport>> pendingReminderImports =
+      ValueNotifier<List<PendingReminderImport>>(<PendingReminderImport>[]);
 
   Future<void> loadInitialSharedImage() async {
     if (defaultTargetPlatform != TargetPlatform.android &&
@@ -49,17 +92,17 @@ class SharedImageReceiver {
     final String? imagePath;
     try {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
-        await _platformChannel.invokeMethod<void>('markFlutterReadyForSharedImport');
-        final map = await _platformChannel.invokeMethod<Map<Object?, Object?>>(
-          'getInitialSharedImport',
+        final maps = await _platformChannel.invokeMethod<List<Object?>>(
+          'fetchPendingReminderImports',
         );
-        if (map == null) {
+        if (maps == null || maps.isEmpty) {
           return;
         }
 
-        final sharedImport = SharedImport.fromMap(map);
-        sharedImagePath.value = sharedImport.imagePath;
-        await _markImportConsumed(sharedImport.id);
+        pendingReminderImports.value = maps
+            .whereType<Map<Object?, Object?>>()
+            .map(PendingReminderImport.fromMap)
+            .toList(growable: false);
         return;
       }
 
@@ -82,18 +125,6 @@ class SharedImageReceiver {
   }
 
   Future<void> _handleMethodCall(MethodCall call) async {
-    if (call.method == 'sharedImportReceived') {
-      final map = call.arguments as Map<Object?, Object?>?;
-      if (map == null) {
-        return;
-      }
-
-      final sharedImport = SharedImport.fromMap(map);
-      sharedImagePath.value = sharedImport.imagePath;
-      await _markImportConsumed(sharedImport.id);
-      return;
-    }
-
     if (call.method == 'sharedImageReceived') {
       final imagePath = call.arguments as String?;
       if (imagePath == null || imagePath.isEmpty) {
@@ -104,13 +135,13 @@ class SharedImageReceiver {
     }
   }
 
-  Future<void> _markImportConsumed(String id) async {
+  Future<void> markPendingReminderImported(String fileName) async {
     if (defaultTargetPlatform != TargetPlatform.iOS) {
       return;
     }
 
-    await _platformChannel.invokeMethod<void>('markSharedImportConsumed', {
-      'id': id,
+    await _platformChannel.invokeMethod<void>('markPendingReminderImported', {
+      'fileName': fileName,
     });
   }
 

@@ -23,13 +23,15 @@ class PictureReminderApp extends StatefulWidget {
   State<PictureReminderApp> createState() => _PictureReminderAppState();
 }
 
-class _PictureReminderAppState extends State<PictureReminderApp> {
+class _PictureReminderAppState extends State<PictureReminderApp>
+    with WidgetsBindingObserver {
   final _navigatorKey = GlobalKey<NavigatorState>();
   final _sharedImageReceiver = SharedImageReceiver();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     widget.notificationService.selectedReminderId.addListener(
       _openSelectedReminder,
     );
@@ -42,6 +44,7 @@ class _PictureReminderAppState extends State<PictureReminderApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.notificationService.selectedReminderId.removeListener(
       _openSelectedReminder,
     );
@@ -50,6 +53,14 @@ class _PictureReminderAppState extends State<PictureReminderApp> {
     );
     _sharedImageReceiver.sharedImagePath.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      widget.reminderStore.importPendingReminders();
+    }
   }
 
   @override

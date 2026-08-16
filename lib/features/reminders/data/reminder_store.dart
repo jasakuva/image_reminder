@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../notifications/data/local_notification_service.dart';
+import '../../share/data/shared_image_receiver.dart';
+import '../domain/reminder_sound_mode.dart';
 import '../domain/picture_reminder.dart';
 import '../domain/reminder_status.dart';
 
@@ -16,6 +18,7 @@ class ReminderStore extends ChangeNotifier {
 
   final LocalNotificationService _notificationService;
   final List<PictureReminder> _reminders = [];
+  final SharedImageReceiver _sharedImageReceiver = SharedImageReceiver();
 
   LocalNotificationService get notificationService => _notificationService;
 
@@ -30,16 +33,20 @@ class ReminderStore extends ChangeNotifier {
 
     final preferences = await SharedPreferences.getInstance();
     final rawJson = preferences.getString(_storageKey);
-    if (rawJson == null || rawJson.isEmpty) {
-      return;
+    if (rawJson != null && rawJson.isNotEmpty) {
+      final decoded = jsonDecode(rawJson) as List<dynamic>;
+      _reminders
+        ..clear()
+        ..addAll(
+          decoded.cast<Map<String, Object?>>().map(PictureReminder.fromJson),
+        );
     }
 
-    final decoded = jsonDecode(rawJson) as List<dynamic>;
-    _reminders
-      ..clear()
-      ..addAll(
-        decoded.cast<Map<String, Object?>>().map(PictureReminder.fromJson),
-      );
+    await importPendingReminders();
+  }
+
+  Future<void> importPendingReminders() async {
+    await _importPendingReminders();
   }
 
   PictureReminder? findById(String id) {
@@ -55,6 +62,59 @@ class ReminderStore extends ChangeNotifier {
     _reminders.add(reminder);
     await _notificationService.scheduleReminder(reminder);
     await _saveAndNotify();
+  }
+
+  Future<void> _importPendingReminders() async {
+    if (kIsWeb || !Platform.isIOS) {
+      return;
+    }
+
+    await _sharedImageReceiver.loadInitialSharedImage();
+    final pendingImports = _sharedImageReceiver.pendingReminderImports.value;
+    debugPrint('[ReminderStore] Pending iOS reminder imports: ${pendingImports.length}');
+    if (pendingImports.isEmpty) {
+      return;
+    }
+
+    var didChange = false;
+    for (final pendingImport in pendingImports) {
+      debugPrint('[ReminderStore] Importing pending reminder id=${pendingImport.id} file=${pendingImport.fileName}');
+      if (findById(pendingImport.id) != null) {
+        debugPrint('[ReminderStore] Reminder already exists, marking imported: ${pendingImport.id}');
+        await _sharedImageReceiver.markPendingReminderImported(pendingImport.fileName);
+        continue;
+      }
+
+      final reminder = PictureReminder(
+        id: pendingImport.id,
+        title: pendingImport.title,
+        note: pendingImport.note,
+        imagePath: pendingImport.imagePath,
+        scheduledAt: pendingImport.scheduledAt,
+        createdAt: pendingImport.createdAt,
+        updatedAt: pendingImport.updatedAt,
+        completedAt: pendingImport.completedAt,
+        status: ReminderStatus.fromName(pendingImport.status),
+        snoozeCount: pendingImport.snoozeCount,
+        notificationId: pendingImport.notificationId,
+        soundMode: ReminderSoundMode.fromName(pendingImport.soundMode),
+        lastSnoozedAt: pendingImport.lastSnoozedAt,
+      );
+
+      _reminders.add(reminder);
+      if (!pendingImport.notificationScheduled) {
+        debugPrint('[ReminderStore] Scheduling imported reminder in Flutter: ${pendingImport.id}');
+        await _notificationService.scheduleReminder(reminder);
+      } else {
+        debugPrint('[ReminderStore] Native notification already scheduled for: ${pendingImport.id}');
+      }
+      await _sharedImageReceiver.markPendingReminderImported(pendingImport.fileName);
+      didChange = true;
+    }
+
+    if (didChange) {
+      await _saveAndNotify();
+    }
   }
 
   Future<void> markCompleted(String id) async {

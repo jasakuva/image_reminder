@@ -1,3 +1,7 @@
+# iOS Share Debug Code Dump
+## ShareViewController.swift
+Path: `ios/ShareExtension/ShareViewController.swift`
+```
 import UniformTypeIdentifiers
 import UIKit
 import UserNotifications
@@ -599,3 +603,554 @@ final class ShareViewController: UIViewController {
     abs(reminderID.hashValue) % 2147483647
   }
 }
+```
+
+## AppDelegate.swift
+Path: `ios/Runner/AppDelegate.swift`
+```
+import Flutter
+import UIKit
+
+private enum RunnerAppGroupConstants {
+  static let identifier = "group.com.jasapart.ireminder"
+  static let pendingRemindersDirectoryName = "PendingReminders"
+}
+
+private struct RunnerPendingReminder: Codable {
+  let id: String
+  let title: String?
+  let note: String?
+  let imagePath: String
+  let scheduledAt: String
+  let createdAt: String
+  let updatedAt: String
+  let completedAt: String?
+  let status: String
+  let snoozeCount: Int
+  let notificationId: Int
+  let soundMode: String
+  let lastSnoozedAt: String?
+  let notificationScheduled: Bool
+  let source: String
+
+  var asDictionary: [String: Any] {
+    [
+      "id": id,
+      "title": title as Any,
+      "note": note as Any,
+      "imagePath": imagePath,
+      "scheduledAt": scheduledAt,
+      "createdAt": createdAt,
+      "updatedAt": updatedAt,
+      "completedAt": completedAt as Any,
+      "status": status,
+      "snoozeCount": snoozeCount,
+      "notificationId": notificationId,
+      "soundMode": soundMode,
+      "lastSnoozedAt": lastSnoozedAt as Any,
+      "notificationScheduled": notificationScheduled,
+      "source": source,
+    ]
+  }
+}
+
+private final class RunnerPendingReminderStore {
+  private let fileManager: FileManager
+  private let appGroupIdentifier: String
+
+  init(
+    appGroupIdentifier: String = RunnerAppGroupConstants.identifier,
+    fileManager: FileManager = .default
+  ) {
+    self.appGroupIdentifier = appGroupIdentifier
+    self.fileManager = fileManager
+  }
+
+  private func pendingRemindersDirectoryURL() throws -> URL {
+    guard let containerURL = fileManager.containerURL(
+      forSecurityApplicationGroupIdentifier: appGroupIdentifier
+    ) else {
+      throw NSError(domain: "ImageReminder.Runner", code: 2001)
+    }
+
+    let directoryURL = containerURL.appendingPathComponent(
+      RunnerAppGroupConstants.pendingRemindersDirectoryName,
+      isDirectory: true
+    )
+    try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+    return directoryURL
+  }
+
+  func fetchAll() -> [[String: Any]] {
+    guard let directoryURL = try? pendingRemindersDirectoryURL() else {
+      print("[Runner] Could not access PendingReminders directory in app group")
+      return []
+    }
+
+    print("[Runner] Reading PendingReminders from: \(directoryURL.path)")
+
+    guard let fileURLs = try? fileManager.contentsOfDirectory(
+      at: directoryURL,
+      includingPropertiesForKeys: nil,
+      options: [.skipsHiddenFiles]
+    ) else {
+      print("[Runner] Could not list PendingReminders directory")
+      return []
+    }
+
+    print("[Runner] Found \(fileURLs.count) pending reminder file(s)")
+
+    return fileURLs.compactMap { fileURL in
+      guard
+        let data = try? Data(contentsOf: fileURL),
+        let reminder = try? JSONDecoder().decode(RunnerPendingReminder.self, from: data)
+      else {
+        print("[Runner] Failed to decode pending reminder file: \(fileURL.lastPathComponent)")
+        return nil
+      }
+
+      var dictionary = reminder.asDictionary
+      dictionary["fileName"] = fileURL.lastPathComponent
+      print("[Runner] Loaded pending reminder id=\(reminder.id) file=\(fileURL.lastPathComponent)")
+      return dictionary
+    }
+  }
+
+  func removeReminderFile(named fileName: String?) {
+    guard let fileName, !fileName.isEmpty, let directoryURL = try? pendingRemindersDirectoryURL() else {
+      print("[Runner] Could not remove pending reminder file: invalid filename or directory unavailable")
+      return
+    }
+
+    let fileURL = directoryURL.appendingPathComponent(fileName, isDirectory: false)
+    try? fileManager.removeItem(at: fileURL)
+    print("[Runner] Removed pending reminder file: \(fileURL.lastPathComponent)")
+  }
+}
+
+@main
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  private let sharedImageChannelName = "com.jasapart.ireminder/shared_images"
+  private var sharedImageChannel: FlutterMethodChannel?
+  private let pendingReminderStore = RunnerPendingReminderStore()
+
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    let didFinishLaunching = super.application(
+      application,
+      didFinishLaunchingWithOptions: launchOptions
+    )
+    configureSharedImageChannel()
+    return didFinishLaunching
+  }
+
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    super.applicationDidBecomeActive(application)
+  }
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    configureSharedImageChannel()
+  }
+
+  private func configureSharedImageChannel() {
+    guard
+      sharedImageChannel == nil,
+      let controller = findFlutterViewController()
+    else {
+      return
+    }
+
+    sharedImageChannel = FlutterMethodChannel(
+      name: sharedImageChannelName,
+      binaryMessenger: controller.binaryMessenger
+    )
+    sharedImageChannel?.setMethodCallHandler { [weak self] call, result in
+      guard let self else {
+        result(nil)
+        return
+      }
+
+      switch call.method {
+      case "fetchPendingReminderImports":
+        result(self.pendingReminderStore.fetchAll())
+      case "markPendingReminderImported":
+        let arguments = call.arguments as? [String: Any]
+        self.pendingReminderStore.removeReminderFile(named: arguments?["fileName"] as? String)
+        result(nil)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  private func findFlutterViewController() -> FlutterViewController? {
+    if let controller = window?.rootViewController as? FlutterViewController {
+      return controller
+    }
+
+    for scene in UIApplication.shared.connectedScenes {
+      guard let windowScene = scene as? UIWindowScene else {
+        continue
+      }
+
+      for window in windowScene.windows {
+        if let controller = window.rootViewController as? FlutterViewController {
+          return controller
+        }
+      }
+    }
+
+    return nil
+  }
+}
+```
+
+## reminder_store.dart
+Path: `lib/features/reminders/data/reminder_store.dart`
+```
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../notifications/data/local_notification_service.dart';
+import '../../share/data/shared_image_receiver.dart';
+import '../domain/reminder_sound_mode.dart';
+import '../domain/picture_reminder.dart';
+import '../domain/reminder_status.dart';
+
+class ReminderStore extends ChangeNotifier {
+  ReminderStore({LocalNotificationService? notificationService})
+    : _notificationService = notificationService ?? LocalNotificationService();
+
+  static const _storageKey = 'picture_reminders';
+
+  final LocalNotificationService _notificationService;
+  final List<PictureReminder> _reminders = [];
+  final SharedImageReceiver _sharedImageReceiver = SharedImageReceiver();
+
+  LocalNotificationService get notificationService => _notificationService;
+
+  List<PictureReminder> get reminders {
+    final sorted = [..._reminders]
+      ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    return List.unmodifiable(sorted);
+  }
+
+  Future<void> load() async {
+    await _notificationService.initialize();
+
+    final preferences = await SharedPreferences.getInstance();
+    final rawJson = preferences.getString(_storageKey);
+    if (rawJson != null && rawJson.isNotEmpty) {
+      final decoded = jsonDecode(rawJson) as List<dynamic>;
+      _reminders
+        ..clear()
+        ..addAll(
+          decoded.cast<Map<String, Object?>>().map(PictureReminder.fromJson),
+        );
+    }
+
+    await importPendingReminders();
+  }
+
+  Future<void> importPendingReminders() async {
+    await _importPendingReminders();
+  }
+
+  PictureReminder? findById(String id) {
+    for (final reminder in _reminders) {
+      if (reminder.id == id) {
+        return reminder;
+      }
+    }
+    return null;
+  }
+
+  Future<void> add(PictureReminder reminder) async {
+    _reminders.add(reminder);
+    await _notificationService.scheduleReminder(reminder);
+    await _saveAndNotify();
+  }
+
+  Future<void> _importPendingReminders() async {
+    if (kIsWeb || !Platform.isIOS) {
+      return;
+    }
+
+    await _sharedImageReceiver.loadInitialSharedImage();
+    final pendingImports = _sharedImageReceiver.pendingReminderImports.value;
+    debugPrint('[ReminderStore] Pending iOS reminder imports: ${pendingImports.length}');
+    if (pendingImports.isEmpty) {
+      return;
+    }
+
+    var didChange = false;
+    for (final pendingImport in pendingImports) {
+      debugPrint('[ReminderStore] Importing pending reminder id=${pendingImport.id} file=${pendingImport.fileName}');
+      if (findById(pendingImport.id) != null) {
+        debugPrint('[ReminderStore] Reminder already exists, marking imported: ${pendingImport.id}');
+        await _sharedImageReceiver.markPendingReminderImported(pendingImport.fileName);
+        continue;
+      }
+
+      final reminder = PictureReminder(
+        id: pendingImport.id,
+        title: pendingImport.title,
+        note: pendingImport.note,
+        imagePath: pendingImport.imagePath,
+        scheduledAt: pendingImport.scheduledAt,
+        createdAt: pendingImport.createdAt,
+        updatedAt: pendingImport.updatedAt,
+        completedAt: pendingImport.completedAt,
+        status: ReminderStatus.fromName(pendingImport.status),
+        snoozeCount: pendingImport.snoozeCount,
+        notificationId: pendingImport.notificationId,
+        soundMode: ReminderSoundMode.fromName(pendingImport.soundMode),
+        lastSnoozedAt: pendingImport.lastSnoozedAt,
+      );
+
+      _reminders.add(reminder);
+      if (!pendingImport.notificationScheduled) {
+        debugPrint('[ReminderStore] Scheduling imported reminder in Flutter: ${pendingImport.id}');
+        await _notificationService.scheduleReminder(reminder);
+      } else {
+        debugPrint('[ReminderStore] Native notification already scheduled for: ${pendingImport.id}');
+      }
+      await _sharedImageReceiver.markPendingReminderImported(pendingImport.fileName);
+      didChange = true;
+    }
+
+    if (didChange) {
+      await _saveAndNotify();
+    }
+  }
+
+  Future<void> markCompleted(String id) async {
+    final index = _reminders.indexWhere((reminder) => reminder.id == id);
+    if (index == -1) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final reminder = _reminders[index];
+    await _notificationService.cancelReminder(reminder);
+
+    _reminders[index] = reminder.copyWith(
+      status: ReminderStatus.completed,
+      completedAt: now,
+      updatedAt: now,
+    );
+    await _saveAndNotify();
+  }
+
+  Future<void> snooze(String id, Duration duration) async {
+    final index = _reminders.indexWhere((reminder) => reminder.id == id);
+    if (index == -1) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final reminder = _reminders[index];
+    await _notificationService.cancelReminder(reminder);
+
+    final snoozedReminder = reminder.copyWith(
+      scheduledAt: now.add(duration),
+      updatedAt: now,
+      status: ReminderStatus.active,
+      snoozeCount: reminder.snoozeCount + 1,
+      lastSnoozedAt: now,
+    );
+    _reminders[index] = snoozedReminder;
+    await _notificationService.scheduleReminder(snoozedReminder);
+    await _saveAndNotify();
+  }
+
+  Future<void> delete(String id) async {
+    final index = _reminders.indexWhere((reminder) => reminder.id == id);
+    if (index == -1) {
+      return;
+    }
+
+    final reminder = _reminders.removeAt(index);
+    await _notificationService.cancelReminder(reminder);
+    final imageFile = File(reminder.imagePath);
+    if (await imageFile.exists()) {
+      await imageFile.delete();
+    }
+    await _saveAndNotify();
+  }
+
+  Future<void> _saveAndNotify() async {
+    final preferences = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(
+      _reminders.map((reminder) => reminder.toJson()).toList(),
+    );
+    await preferences.setString(_storageKey, encoded);
+    notifyListeners();
+  }
+}
+```
+
+## shared_image_receiver.dart
+Path: `lib/features/share/data/shared_image_receiver.dart`
+```
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+
+class PendingReminderImport {
+  PendingReminderImport({
+    required this.fileName,
+    required this.id,
+    required this.imagePath,
+    required this.scheduledAt,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.status,
+    required this.snoozeCount,
+    required this.notificationId,
+    required this.soundMode,
+    required this.notificationScheduled,
+    required this.source,
+    this.title,
+    this.note,
+    this.completedAt,
+    this.lastSnoozedAt,
+  });
+
+  final String fileName;
+  final String id;
+  final String? title;
+  final String? note;
+  final String imagePath;
+  final DateTime scheduledAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? completedAt;
+  final String status;
+  final int snoozeCount;
+  final int notificationId;
+  final String soundMode;
+  final DateTime? lastSnoozedAt;
+  final bool notificationScheduled;
+  final String source;
+
+  factory PendingReminderImport.fromMap(Map<Object?, Object?> map) {
+    DateTime? parseOptionalDate(Object? value) {
+      if (value is! String || value.isEmpty) {
+        return null;
+      }
+      return DateTime.parse(value);
+    }
+
+    return PendingReminderImport(
+      fileName: map['fileName'] as String,
+      id: map['id'] as String,
+      title: map['title'] as String?,
+      note: map['note'] as String?,
+      imagePath: map['imagePath'] as String,
+      scheduledAt: DateTime.parse(map['scheduledAt'] as String),
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      completedAt: parseOptionalDate(map['completedAt']),
+      status: map['status'] as String? ?? 'active',
+      snoozeCount: (map['snoozeCount'] as num?)?.toInt() ?? 0,
+      notificationId: (map['notificationId'] as num?)?.toInt() ?? 0,
+      soundMode: map['soundMode'] as String? ?? 'notification',
+      lastSnoozedAt: parseOptionalDate(map['lastSnoozedAt']),
+      notificationScheduled: map['notificationScheduled'] as bool? ?? false,
+      source: map['source'] as String? ?? 'unknown',
+    );
+  }
+}
+
+class SharedImageReceiver {
+  SharedImageReceiver() {
+    _platformChannel.setMethodCallHandler(_handleMethodCall);
+  }
+
+  static const _androidChannel = MethodChannel(
+    'com.example.pic_reminder/shared_images',
+  );
+  static const _iosChannel = MethodChannel(
+    'com.jasapart.ireminder/shared_images',
+  );
+
+  final ValueNotifier<String?> sharedImagePath = ValueNotifier(null);
+  final ValueNotifier<List<PendingReminderImport>> pendingReminderImports =
+      ValueNotifier<List<PendingReminderImport>>(<PendingReminderImport>[]);
+
+  Future<void> loadInitialSharedImage() async {
+    if (defaultTargetPlatform != TargetPlatform.android &&
+        defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+
+    final String? imagePath;
+    try {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        final maps = await _platformChannel.invokeMethod<List<Object?>>(
+          'fetchPendingReminderImports',
+        );
+        if (maps == null || maps.isEmpty) {
+          return;
+        }
+
+        pendingReminderImports.value = maps
+            .whereType<Map<Object?, Object?>>()
+            .map(PendingReminderImport.fromMap)
+            .toList(growable: false);
+        return;
+      }
+
+      imagePath = await _platformChannel.invokeMethod<String?>(
+        'getInitialSharedImage',
+      );
+    } on MissingPluginException {
+      return;
+    }
+
+    if (imagePath == null || imagePath.isEmpty) {
+      return;
+    }
+
+    sharedImagePath.value = imagePath;
+  }
+
+  void clearSharedImage() {
+    sharedImagePath.value = null;
+  }
+
+  Future<void> _handleMethodCall(MethodCall call) async {
+    if (call.method == 'sharedImageReceived') {
+      final imagePath = call.arguments as String?;
+      if (imagePath == null || imagePath.isEmpty) {
+        return;
+      }
+
+      sharedImagePath.value = imagePath;
+    }
+  }
+
+  Future<void> markPendingReminderImported(String fileName) async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+
+    await _platformChannel.invokeMethod<void>('markPendingReminderImported', {
+      'fileName': fileName,
+    });
+  }
+
+  MethodChannel get _platformChannel {
+    return defaultTargetPlatform == TargetPlatform.iOS
+        ? _iosChannel
+        : _androidChannel;
+  }
+}
+```
+
