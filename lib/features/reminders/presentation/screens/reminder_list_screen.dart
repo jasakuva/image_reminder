@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/motorsport_theme.dart';
+import '../../../billing/data/premium_access_store.dart';
+import '../../../billing/presentation/widgets/upgrade_prompt.dart';
 import '../../data/reminder_store.dart';
 import '../../../settings/presentation/screens/settings_info_screen.dart';
 import 'create_reminder_screen.dart';
@@ -8,9 +10,14 @@ import 'reminder_detail_screen.dart';
 import '../widgets/reminder_card.dart';
 
 class ReminderListScreen extends StatelessWidget {
-  const ReminderListScreen({required this.reminderStore, super.key});
+  const ReminderListScreen({
+    required this.reminderStore,
+    required this.premiumAccessStore,
+    super.key,
+  });
 
   final ReminderStore reminderStore;
+  final PremiumAccessStore premiumAccessStore;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +30,9 @@ class ReminderListScreen extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => const SettingsInfoScreen(),
+                  builder: (_) => SettingsInfoScreen(
+                    premiumAccessStore: premiumAccessStore,
+                  ),
                 ),
               );
             },
@@ -74,10 +83,17 @@ class ReminderListScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
+          if (reminderStore.hasReachedFreeReminderLimit(premiumAccessStore.isPremium)) {
+            showUpgradePrompt(context);
+            return;
+          }
+
           Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) =>
-                  CreateReminderScreen(reminderStore: reminderStore),
+              builder: (_) => CreateReminderScreen(
+                reminderStore: reminderStore,
+                premiumAccessStore: premiumAccessStore,
+              ),
             ),
           );
         },

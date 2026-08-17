@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/time/date_formatters.dart';
 import '../../../../core/theme/motorsport_theme.dart';
+import '../../../billing/data/premium_access_store.dart';
+import '../../../billing/presentation/widgets/upgrade_prompt.dart';
 import '../../../images/data/local_image_storage_service.dart';
 import '../../../images/data/picture_picker_service.dart';
 import '../../data/reminder_store.dart';
@@ -15,11 +17,13 @@ import '../../domain/reminder_status.dart';
 class CreateReminderScreen extends StatefulWidget {
   const CreateReminderScreen({
     required this.reminderStore,
+    required this.premiumAccessStore,
     this.initialImagePath,
     super.key,
   });
 
   final ReminderStore reminderStore;
+  final PremiumAccessStore premiumAccessStore;
   final String? initialImagePath;
 
   @override
@@ -157,6 +161,11 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
   }
 
   Future<void> _saveReminder() async {
+    if (widget.reminderStore.hasReachedFreeReminderLimit(widget.premiumAccessStore.isPremium)) {
+      await showUpgradePrompt(context);
+      return;
+    }
+
     final selectedImagePath = _selectedImagePath;
     if (selectedImagePath == null) {
       _showSnackBar('Choose or take a picture first.');

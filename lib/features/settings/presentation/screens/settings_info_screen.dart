@@ -2,9 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/app_info/app_build_info.dart';
 import '../../../../core/theme/motorsport_theme.dart';
+import '../../../billing/data/premium_access_store.dart';
 
-class SettingsInfoScreen extends StatelessWidget {
-  const SettingsInfoScreen({super.key});
+class SettingsInfoScreen extends StatefulWidget {
+  const SettingsInfoScreen({required this.premiumAccessStore, super.key});
+
+  final PremiumAccessStore premiumAccessStore;
+
+  @override
+  State<SettingsInfoScreen> createState() => _SettingsInfoScreenState();
+}
+
+class _SettingsInfoScreenState extends State<SettingsInfoScreen> {
+  bool _isUpdating = false;
 
   @override
   Widget build(BuildContext context) {
@@ -45,14 +55,28 @@ class SettingsInfoScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            const _InfoSection(
+            _InfoSection(
               title: 'Settings',
-              children: [_PlaceholderSetting()],
+              children: [
+                _PremiumToggleCard(
+                  isPremium: widget.premiumAccessStore.isPremium,
+                  isUpdating: _isUpdating,
+                  onToggle: _togglePremium,
+                ),
+              ],
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _togglePremium() async {
+    setState(() => _isUpdating = true);
+    await widget.premiumAccessStore.setPremium(!widget.premiumAccessStore.isPremium);
+    if (mounted) {
+      setState(() => _isUpdating = false);
+    }
   }
 }
 
@@ -120,8 +144,16 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _PlaceholderSetting extends StatelessWidget {
-  const _PlaceholderSetting();
+class _PremiumToggleCard extends StatelessWidget {
+  const _PremiumToggleCard({
+    required this.isPremium,
+    required this.isUpdating,
+    required this.onToggle,
+  });
+
+  final bool isPremium;
+  final bool isUpdating;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -136,15 +168,22 @@ class _PlaceholderSetting extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.tune_outlined, color: MotorsportColors.pitRed),
+          const Icon(Icons.workspace_premium_outlined, color: MotorsportColors.pitRed),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'More settings can be added here later.',
+              isPremium
+                  ? 'Premium enabled. Unlimited reminders allowed.'
+                  : 'Free plan active. Up to 2 active reminders allowed.',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: MotorsportColors.muted,
               ),
             ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton(
+            onPressed: isUpdating ? null : onToggle,
+            child: Text(isPremium ? 'Disable' : 'Enable'),
           ),
         ],
       ),

@@ -7,6 +7,8 @@ private enum AppGroupConstants {
   static let sharedImagesDirectoryName = "SharedImages"
   static let pendingRemindersDirectoryName = "PendingReminders"
   static let notificationSoundFile = "reminder_alarm.wav"
+  static let premiumKey = "isPremium"
+  static let activeReminderCountKey = "activeReminderCount"
 }
 
 private struct PendingReminder: Codable {
@@ -498,6 +500,16 @@ final class ShareViewController: UIViewController {
   }
 
   @objc private func saveReminder() {
+    let defaults = UserDefaults(suiteName: AppGroupConstants.identifier)
+    let isPremium = defaults?.bool(forKey: AppGroupConstants.premiumKey) ?? false
+    let activeReminderCount = defaults?.integer(forKey: AppGroupConstants.activeReminderCountKey) ?? 0
+    if !isPremium && activeReminderCount >= 2 {
+      showError(
+        message: "Free version allows up to 2 active reminders. Upgrade to Premium in ImageReminder for unlimited reminders.",
+      )
+      return
+    }
+
     guard let imageURL = importedImageURL else {
       showError(message: "Could not save this image. Please try again.")
       return

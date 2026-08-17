@@ -28,6 +28,17 @@ class ReminderStore extends ChangeNotifier {
     return List.unmodifiable(sorted);
   }
 
+  int get activeReminderCount =>
+      _reminders.where((reminder) => reminder.status == ReminderStatus.active).length;
+
+  bool hasReachedFreeReminderLimit(bool isPremium) {
+    if (isPremium) {
+      return false;
+    }
+
+    return activeReminderCount >= 2;
+  }
+
   Future<void> load() async {
     await _notificationService.initialize();
 
