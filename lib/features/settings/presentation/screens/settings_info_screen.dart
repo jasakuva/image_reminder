@@ -60,6 +60,7 @@ class _SettingsInfoScreenState extends State<SettingsInfoScreen> {
               title: 'Settings',
               children: [
                 _PremiumToggleCard(
+                  premiumAccessStore: widget.premiumAccessStore,
                   isPremium: widget.premiumAccessStore.isPremium,
                   isUpdating: _isUpdating,
                   onToggle: _togglePremium,
@@ -155,12 +156,14 @@ class _InfoRow extends StatelessWidget {
 
 class _PremiumToggleCard extends StatelessWidget {
   const _PremiumToggleCard({
+    required this.premiumAccessStore,
     required this.isPremium,
     required this.isUpdating,
     required this.onToggle,
     required this.onAddCode,
   });
 
+  final PremiumAccessStore premiumAccessStore;
   final bool isPremium;
   final bool isUpdating;
   final VoidCallback onToggle;
@@ -192,6 +195,17 @@ class _PremiumToggleCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
+          if (!isPremium)
+            OutlinedButton(
+              onPressed: isUpdating
+                  ? null
+                  : () => showUpgradePrompt(
+                        context,
+                        premiumAccessStore: premiumAccessStore,
+                      ),
+              child: const Text('Upgrade'),
+            ),
+          if (!isPremium) const SizedBox(width: 8),
           OutlinedButton(
             onPressed: isUpdating ? null : onAddCode,
             child: const Text('Add code'),

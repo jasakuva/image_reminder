@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/billing_service.dart';
 import '../../data/premium_access_store.dart';
 
 const _debugPremiumCode = '126543';
@@ -8,50 +9,80 @@ Future<void> showUpgradePrompt(
   BuildContext context, {
   required PremiumAccessStore premiumAccessStore,
 }) {
+  final billingService = premiumAccessStore.billingService;
+
   return showDialog<void>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Upgrade to Premium'),
-      content: const Text(
-        'Free version supports up to 2 active reminders. Upgrade to Premium for unlimited reminders.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Not now'),
-        ),
-        TextButton(
-          onPressed: () async {
-            Navigator.of(context).pop();
-            await _showPremiumCodeDialog(
-              context,
-              premiumAccessStore: premiumAccessStore,
-            );
-          },
-          child: const Text('Add code'),
-        ),
-        FilledButton(
-          onPressed: () async {
-            Navigator.of(context).pop();
-            await showDialog<void>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Upgrade'),
-                content: const Text(
-                  'Real store purchase flow is not connected yet in this debug phase. Use Add code for testing Premium unlock.',
+    builder: (context) => ListenableBuilder(
+      listenable: billingService,
+      builder: (context, _) {
+        final product = billingService.premiumProduct;
+        final availability = billingService.availabilityState;
+        final isLoading = billingService.isLoading;
+
+        var message =
+            'Free version supports up to 2 active reminders. Upgrade to Premium for unlimited reminders.';
+
+        if (availability == BillingAvailabilityState.productNotFound) {
+          message =
+              'Premium purchase is coming soon. Please check back shortly. You can still use Add code for testing.';
+        } else if (availability == BillingAvailabilityState.unavailable) {
+          message =
+              'Purchases are temporarily unavailable on this device. You can still use Add code for testing.';
+        } else if (availability == BillingAvailabilityState.error &&
+            billingService.errorMessage != null) {
+          message =
+              'Purchase service is not ready yet. ${billingService.errorMessage}\n\nYou can still use Add code for testing.';
+        }
+
+        return AlertDialog(
+          title: const Text('Upgrade to Premium'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(message),
+              const SizedBox(height: 16),
+              if (product != null)
+                Text(
+                  'One-time purchase: ${product.price}',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-                actions: [
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          },
-          child: const Text('Upgrade'),
-        ),
-      ],
+              if (isLoading) ...[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton.tonal(
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await _showPremiumCodeDialog(
+                  context,
+                  premiumAccessStore: premiumAccessStore,
+                );
+              },
+              child: const Text('Add code'),
+            ),
+            FilledButton(
+              onPressed: product == null ||
+                      availability != BillingAvailabilityState.available ||
+                      isLoading
+                  ? null
+                  : () async {
+                      Navigator.of(context).pop();
+                      await billingService.buyPremiumUnlock();
+                    },
+              child: Text(product == null ? 'Purchase coming soon' : 'Buy now'),
+            ),
+          ],
+        );
+      },
     ),
   );
 }

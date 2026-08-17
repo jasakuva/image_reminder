@@ -10,6 +10,7 @@ Future<void> main() async {
   final reminderStore = ReminderStore();
   final premiumAccessStore = PremiumAccessStore();
   await premiumAccessStore.load();
+  await premiumAccessStore.initializeBilling();
   await reminderStore.load();
 
   runApp(
