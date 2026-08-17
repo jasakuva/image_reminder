@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/app_info/app_build_info.dart';
 import '../../../../core/theme/motorsport_theme.dart';
 import '../../../billing/data/premium_access_store.dart';
+import '../../../billing/presentation/widgets/upgrade_prompt.dart';
 
 class SettingsInfoScreen extends StatefulWidget {
   const SettingsInfoScreen({required this.premiumAccessStore, super.key});
@@ -62,6 +63,7 @@ class _SettingsInfoScreenState extends State<SettingsInfoScreen> {
                   isPremium: widget.premiumAccessStore.isPremium,
                   isUpdating: _isUpdating,
                   onToggle: _togglePremium,
+                  onAddCode: _addCode,
                 ),
               ],
             ),
@@ -77,6 +79,13 @@ class _SettingsInfoScreenState extends State<SettingsInfoScreen> {
     if (mounted) {
       setState(() => _isUpdating = false);
     }
+  }
+
+  Future<void> _addCode() async {
+    await showUpgradePrompt(
+      context,
+      premiumAccessStore: widget.premiumAccessStore,
+    );
   }
 }
 
@@ -149,11 +158,13 @@ class _PremiumToggleCard extends StatelessWidget {
     required this.isPremium,
     required this.isUpdating,
     required this.onToggle,
+    required this.onAddCode,
   });
 
   final bool isPremium;
   final bool isUpdating;
   final VoidCallback onToggle;
+  final VoidCallback onAddCode;
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +192,11 @@ class _PremiumToggleCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: isUpdating ? null : onAddCode,
+            child: const Text('Add code'),
+          ),
+          const SizedBox(width: 8),
           FilledButton(
             onPressed: isUpdating ? null : onToggle,
             child: Text(isPremium ? 'Disable' : 'Enable'),

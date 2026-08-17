@@ -162,7 +162,10 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
 
   Future<void> _saveReminder() async {
     if (widget.reminderStore.hasReachedFreeReminderLimit(widget.premiumAccessStore.isPremium)) {
-      await showUpgradePrompt(context);
+      await showUpgradePrompt(
+        context,
+        premiumAccessStore: widget.premiumAccessStore,
+      );
       return;
     }
 

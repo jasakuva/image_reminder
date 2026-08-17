@@ -84,7 +84,10 @@ class ReminderListScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           if (reminderStore.hasReachedFreeReminderLimit(premiumAccessStore.isPremium)) {
-            showUpgradePrompt(context);
+            showUpgradePrompt(
+              context,
+              premiumAccessStore: premiumAccessStore,
+            );
             return;
           }
 
