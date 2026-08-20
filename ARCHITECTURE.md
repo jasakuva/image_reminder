@@ -2,200 +2,193 @@
 
 ## 1. Architecture Goals
 
-The app architecture should be simple enough for an MVP but organized enough to support Android, iOS, and Windows.
+The current architecture aims to keep the app simple, local-first, and practical across Android, iOS, and Windows.
 
 Primary goals:
 
-- Keep UI separate from business logic.
-- Keep platform-specific code isolated.
-- Make local data storage reliable.
-- Make notification scheduling testable where possible.
-- Avoid unnecessary complexity in the first version.
+- Keep UI separate from data and platform integration code
+- Keep implementation lightweight for current scope
+- Make reminder and notification flows easy to reason about
+- Support localization and settings cleanly
+- Leave room for later billing and share/import expansion
 
-## 2. Recommended Approach
-
-Use a feature-first Flutter structure:
+## 2. Current Project Structure
 
 ```text
 lib/
   main.dart
   app.dart
+  l10n/
   core/
-    constants/
-    errors/
-    routing/
+    app_info/
     theme/
     time/
-    utils/
   features/
+    billing/
+      data/
+      presentation/
+    images/
+      data/
+    notifications/
+      data/
     reminders/
       data/
       domain/
       presentation/
-    images/
+    settings/
       data/
-      domain/
-    notifications/
+      presentation/
+    share/
       data/
-      domain/
 ```
 
-## 3. Layers
+## 3. Current Layering
 
 ### 3.1 Presentation Layer
 
-Contains Flutter widgets, screens, and UI state.
+Contains screens and widgets such as:
+
+- reminder list
+- reminder detail
+- create reminder
+- settings & info
+- upgrade prompt
 
 Responsibilities:
 
-- Show reminder lists.
-- Show reminder details.
-- Show image previews.
-- Handle user input.
-- Display validation errors.
-- Call domain/application services.
-
-Example files:
-
-```text
-features/reminders/presentation/screens/reminder_list_screen.dart
-features/reminders/presentation/screens/reminder_detail_screen.dart
-features/reminders/presentation/screens/create_reminder_screen.dart
-features/reminders/presentation/widgets/reminder_card.dart
-```
+- Render UI
+- Read localized strings
+- Handle user interaction
+- Call stores/services
 
 ### 3.2 Domain Layer
 
-Contains app concepts and business rules.
+Current reminder domain objects include:
+
+- `PictureReminder`
+- `ReminderStatus`
+- `ReminderSoundMode`
 
 Responsibilities:
 
-- Define reminder entity/model.
-- Define repository interfaces if used.
-- Define reminder status.
-- Define validation rules.
-- Define use cases such as create reminder, snooze reminder, complete reminder.
+- Represent reminder data
+- Represent reminder status and sound mode
+- Support app-level reminder behavior through model/state updates
 
-Example files:
+### 3.3 Data / Service Layer
 
-```text
-features/reminders/domain/reminder.dart
-features/reminders/domain/reminder_status.dart
-features/reminders/domain/reminder_repository.dart
-features/reminders/domain/create_reminder_use_case.dart
-features/reminders/domain/snooze_reminder_use_case.dart
-```
+Current data-oriented classes include:
 
-### 3.3 Data Layer
-
-Contains database, file storage, and plugin integrations.
+- `ReminderStore`
+- `PremiumAccessStore`
+- `LocaleSettingsStore`
+- `LocalNotificationService`
+- `LocalImageStorageService`
+- `PicturePickerService`
+- `SharedImageReceiver`
 
 Responsibilities:
 
-- Save reminder metadata.
-- Load reminder metadata.
-- Save image files.
-- Compress images.
-- Schedule/cancel local notifications.
-- Map database rows to domain models.
+- Persist reminders
+- Persist settings/premium status
+- Schedule/cancel notifications
+- Store and load image files
+- Receive shared/imported images on supported platforms
 
-Example files:
+## 4. State Management
+
+Current app state is managed with:
+
+- `ChangeNotifier`
+- `ValueNotifier`
+- `ListenableBuilder`
+
+This is intentionally lightweight and matches the current project scope.
+
+## 5. Current Data Flow
+
+### 5.1 App Startup
 
 ```text
-features/reminders/data/local_reminder_repository.dart
-features/images/data/local_image_storage_service.dart
-features/notifications/data/local_notification_service.dart
+main()
+  -> load premium state
+  -> initialize billing
+  -> load locale setting
+  -> load reminders
+  -> initialize app
 ```
 
-## 4. Main Feature Modules
-
-### 4.1 Reminders Feature
-
-Owns:
-
-- Reminder model.
-- Reminder database table.
-- Reminder create/edit/delete flows.
-- Reminder list and detail UI.
-- Snooze and complete behavior.
-
-### 4.2 Images Feature
-
-Owns:
-
-- Camera/image/file picking logic.
-- Image compression.
-- Image file storage.
-- Thumbnail generation.
-
-### 4.3 Notifications Feature
-
-Owns:
-
-- Local notification setup.
-- Permission requests.
-- Notification scheduling.
-- Notification cancellation.
-- Notification tap routing payload.
-
-## 5. Data Flow
-
-### 5.1 Create Reminder
+### 5.2 Create Reminder
 
 ```text
 User selects image
-  -> Image service copies/compresses image
-  -> User selects reminder time
-  -> Reminder repository saves metadata
-  -> Notification service schedules local notification
-  -> UI returns to reminder list
+  -> image picker / camera flow
+  -> image stored locally
+  -> reminder created in ReminderStore
+  -> LocalNotificationService schedules notification
+  -> reminder list updates
 ```
 
-### 5.2 Notification Tap
+### 5.3 Notification Tap
 
 ```text
-User taps OS notification
-  -> Notification payload contains reminder ID
-  -> App router opens reminder detail route
-  -> Reminder repository loads reminder
-  -> UI displays saved picture
+Notification tapped
+  -> LocalNotificationService sets selected reminder id
+  -> app listener receives it
+  -> reminder detail route opens
 ```
 
-### 5.3 Snooze
+### 5.4 Shared Image Import
 
 ```text
-User selects snooze duration
-  -> Old notification is cancelled
-  -> Reminder scheduledAt is updated
-  -> New notification is scheduled
-  -> Reminder list/detail updates
+Shared image received on supported platform
+  -> SharedImageReceiver loads pending import/shared path
+  -> app opens create reminder flow or imports pending reminders
 ```
 
-## 6. Suggested Database Schema
-
-Initial `reminders` table:
+### 5.5 Premium Access Sync
 
 ```text
-id TEXT PRIMARY KEY
-title TEXT NULL
-note TEXT NULL
-image_path TEXT NOT NULL
-thumbnail_path TEXT NULL
-scheduled_at INTEGER NOT NULL
-created_at INTEGER NOT NULL
-updated_at INTEGER NOT NULL
-completed_at INTEGER NULL
-status TEXT NOT NULL
-notification_id INTEGER NOT NULL
-snooze_count INTEGER NOT NULL DEFAULT 0
-last_snoozed_at INTEGER NULL
+PremiumAccessStore changes
+  -> app syncs state to SharedImageReceiver on iOS path
+  -> free/premium gating updates UI behavior
 ```
 
-Store dates as UTC milliseconds since epoch, then convert to local time for display/scheduling.
+## 6. Current Persistence Model
 
-## 7. Notification Payload
+### 6.1 Reminder Metadata
 
-Use a simple JSON payload:
+Current approach:
+
+- `SharedPreferences`
+- serialized JSON list of reminders
+
+This is simple and sufficient for current app size, though a future migration to a stronger local database remains possible.
+
+### 6.2 Images
+
+Current approach:
+
+- image files stored in local app-managed storage
+- reminder model stores file path
+
+### 6.3 App Settings
+
+Stored locally:
+
+- selected locale code
+- premium flag
+
+## 7. Notifications
+
+Notification implementation details:
+
+- `flutter_local_notifications`
+- timezone-aware scheduling
+- platform-specific Android/iOS details for sound mode
+- JSON payload with reminder id
+
+Payload concept:
 
 ```json
 {
@@ -204,70 +197,41 @@ Use a simple JSON payload:
 }
 ```
 
-The notification tap handler should parse this and navigate to:
+## 8. Localization
+
+Localization is implemented with Flutter gen-l10n.
+
+Current supported locales:
+
+- `en`
+- `fi`
+- `sv`
+- `ja`
+- `de`
+
+Files live under:
 
 ```text
-/reminders/:id
+lib/l10n/
 ```
 
-## 8. Error Handling
+## 9. Billing / Premium Architecture
 
-The app should gracefully handle:
+Billing is currently split into:
 
-- Missing image file.
-- Deleted reminder with pending notification.
-- Permission denied.
-- Notification scheduling failure.
-- Database read/write failure.
-- Image compression failure.
+- `BillingService` for store/plugin integration
+- `PremiumAccessStore` for app-level premium state
+- UI prompt in billing presentation
 
-For MVP, show a user-friendly message and keep the app usable.
+Current product state:
 
-## 9. State Management
+- Free limit enforced in reminder creation flow
+- Premium simulation/testing supported
+- Full Android validation still pending
 
-Do not overcomplicate the first version.
+## 10. Known Technical Limitations
 
-Reasonable options:
-
-- `ChangeNotifier` / `ValueNotifier` for simple MVP.
-- Riverpod if a more scalable state management package is desired.
-
-Recommended MVP choice:
-
-- Start simple.
-- Add Riverpod only if state management becomes messy.
-
-## 10. Testing Strategy
-
-### Unit Tests
-
-- Reminder date calculation.
-- Snooze calculation.
-- Reminder validation.
-- Data mapping.
-
-### Widget Tests
-
-- Reminder list renders items.
-- Empty state is shown.
-- Create reminder form validates required fields.
-
-### Manual Platform Tests
-
-- Notification permission flow.
-- Notification scheduling.
-- Notification tap navigation.
-- Camera/gallery/file import.
-
-## 11. Platform Isolation
-
-Platform-specific behavior should be hidden behind services:
-
-```text
-NotificationService
-ImagePickerService
-FileStorageService
-PermissionService
-```
-
-This avoids spreading platform checks across UI widgets.
+- Reminder metadata currently uses key-value JSON storage rather than a structured database
+- Purchase plugin may emit upstream iOS SDK deprecation warnings
+- Windows platform behavior needs more validation
+- Widget tests need alignment with current UI behavior

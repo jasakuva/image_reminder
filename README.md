@@ -1,20 +1,59 @@
 # Picture Reminder
 
-Picture Reminder is a planned Flutter app for Android, iOS, and Windows.
+Picture Reminder is a Flutter app for Android, iOS, and Windows that lets users create reminders from pictures and screenshots stored locally on the device.
 
-The app lets users save or take a picture and create a reminder connected to that picture. When the reminder time arrives, the app shows a local notification. Tapping the notification opens the related picture inside the app.
+When a reminder fires, the app shows a local notification. Tapping the notification opens the related reminder inside the app.
 
-## Main Features
+## Current Status
 
-- Take a photo and attach it to a reminder.
-- Import an existing image or screenshot.
-- Store all data locally on the device.
-- Create multiple picture reminders.
-- Schedule reminders for exact date/time.
-- Use quick reminder options such as `after 1 hour` or `tomorrow`.
-- Snooze reminders and be reminded again later.
-- Mark reminders as done.
-- Delete reminders and their stored images.
+The app is implemented and actively evolving.
+
+Current implemented areas include:
+
+- Reminder list, detail, create, snooze, complete, and delete flows
+- Local image import and camera/photo picking flow
+- Local notifications with tap-to-open reminder behavior
+- Reminder sound mode selection (`Notification` / `Alarm`)
+- Free vs premium reminder gating
+- Simulated premium unlock and in-app purchase groundwork
+- Settings and info screen
+- App localization
+- iOS shared image / pending reminder import groundwork
+
+## Current Features
+
+- Create a reminder from an imported image or photo
+- Store reminder data locally on device
+- Store image files locally in app-managed storage
+- View reminders in a sorted list
+- Open reminder detail screen with full image
+- Mark reminders as done
+- Snooze reminders for:
+  - 5 minutes
+  - 10 minutes
+  - 1 hour
+  - tomorrow
+- Delete reminders and associated local image files
+- Open reminder detail from notification tap
+- Choose app language from settings
+- Premium/free gating for active reminder count
+
+## Supported Languages
+
+- English
+- Finnish (`Suomi`)
+- Swedish (`Svenska`)
+- Japanese (`日本語`)
+- German (`Deutsch`)
+
+## Premium Status
+
+The app currently includes premium access groundwork and simulated unlock support.
+
+- Free plan allows up to 2 active reminders
+- Premium removes the active reminder limit
+- Premium can currently be simulated/tested in app
+- Paid version was simulated and tested on iOS, not on Android yet
 
 ## Target Platforms
 
@@ -22,119 +61,85 @@ The app lets users save or take a picture and create a reminder connected to tha
 - iOS
 - Windows
 
-## Current Status
+## Current Technical Approach
 
-This repository currently contains planning and specification documents.
+- Flutter app with feature-oriented structure
+- Local-first storage
+- Reminder persistence currently uses `SharedPreferences` with JSON serialization
+- Images stored as files in local app storage
+- Local notifications via `flutter_local_notifications`
+- Localization via Flutter gen-l10n
+- Simple app state with `ChangeNotifier` / `ValueNotifier`
 
-The Flutter application has not been generated yet.
+## Main Dependencies In Use
+
+Key current dependencies from `pubspec.yaml`:
+
+```yaml
+dependencies:
+  flutter_localizations:
+    sdk: flutter
+  image_picker: ^1.2.3
+  path_provider: ^2.1.6
+  shared_preferences: ^2.5.5
+  in_app_purchase: ^3.3.0
+  uuid: ^4.6.0
+  intl: ^0.20.3
+  flutter_local_notifications: ^22.3.0
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
+```
+
+## Project Structure
+
+Main app areas:
+
+```text
+lib/
+  app.dart
+  main.dart
+  l10n/
+  core/
+  features/
+    billing/
+    images/
+    notifications/
+    reminders/
+    settings/
+    share/
+```
 
 ## Documentation
 
-- [SPEC.md](SPEC.md) — product and technical specification.
-- [PLAN.md](PLAN.md) — implementation roadmap.
-- [ARCHITECTURE.md](ARCHITECTURE.md) — proposed technical architecture.
-- [BACKLOG.md](BACKLOG.md) — prioritized feature backlog.
-- [DECISIONS.md](DECISIONS.md) — technical decisions and open questions.
+- [SPEC.md](SPEC.md) — current product/feature specification
+- [PLAN.md](PLAN.md) — implemented work and next steps
+- [ARCHITECTURE.md](ARCHITECTURE.md) — current technical structure
+- [BACKLOG.md](BACKLOG.md) — remaining prioritized work
+- [DECISIONS.md](DECISIONS.md) — current implementation decisions
 
-## Recommended MVP
-
-The first version should focus on Android first, then expand to iOS and Windows.
-
-MVP features:
-
-1. Import image.
-2. Save image locally.
-3. Create reminder with date/time.
-4. Store reminder locally.
-5. Schedule local notification.
-6. Open reminder detail from notification tap.
-7. Snooze reminder from inside app.
-8. Mark reminder as done.
-9. Delete reminder and image.
-
-## Future Flutter Setup
-
-When implementation starts, create the Flutter app in this folder:
-
-```bash
-flutter create --platforms=android,ios,windows .
-```
-
-Then verify available devices:
-
-```bash
-flutter devices
-```
-
-Run on Windows:
-
-```bash
-flutter run -d windows
-```
-
-Run on Android:
-
-```bash
-flutter run -d android
-```
-
-## Suggested Initial Dependencies
-
-Exact versions should be selected during implementation.
-
-Likely packages:
-
-```yaml
-dependencies:
-  flutter_local_notifications: any
-  timezone: any
-  path_provider: any
-  permission_handler: any
-  image_picker: any
-  file_picker: any
-  flutter_image_compress: any
-  uuid: any
-```
-
-Recommended database option:
-
-```yaml
-dependencies:
-  drift: any
-  sqlite3_flutter_libs: any
-  path: any
-
-dev_dependencies:
-  drift_dev: any
-  build_runner: any
-```
-
-Do not keep `any` versions permanently. Pin versions once packages are added.
-
-## Important Platform Notes
+## Platform Notes
 
 ### Android
 
-- Android 13+ requires notification permission.
-- Exact reminder timing may require exact alarm permission.
-- Battery optimization can delay reminders on some devices.
+- Local notifications are implemented
+- Premium purchase flow has groundwork, but paid version has not yet been fully validated on Android
 
 ### iOS
 
-- Local notification permission is required.
-- iOS limits background processing.
-- Complex snooze actions from notifications may need native notification categories.
+- Local notifications are implemented
+- Premium simulation has been tested
+- Shared image / pending reminder import support has groundwork in place
 
 ### Windows
 
-- Local storage is straightforward.
-- Notifications while app is fully closed may need extra Windows-specific work.
+- Project exists and builds as a target platform
+- Mobile-specific image and notification behavior still needs more platform-specific validation
 
 ## Privacy
 
-The app should be local-first.
+The app is local-first.
 
-- No user accounts for MVP.
-- No cloud storage for MVP.
-- No analytics for MVP unless explicitly added later.
-- Pictures remain on the user's device.
+- No user accounts
+- No cloud sync
+- No backend required
+- Reminder data and images stay on the user's device

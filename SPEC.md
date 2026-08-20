@@ -4,338 +4,197 @@
 
 Picture Reminder is a Flutter application for Android, iOS, and Windows that lets users create reminders connected to locally stored pictures or screenshots.
 
-The core idea is simple:
+Core behavior:
 
-1. User takes, imports, or saves a picture.
-2. User chooses when they want to be reminded.
-3. The app schedules a local reminder.
-4. When the reminder fires, the user is notified and can open the related picture.
-5. The user can mark the reminder as done or snooze it for later.
+1. User imports or captures an image.
+2. User selects reminder text, sound mode, and time.
+3. App stores the reminder locally.
+4. App schedules a local notification.
+5. Tapping the notification opens the related reminder detail.
+6. User can mark the reminder done, snooze it, or delete it.
 
-All user data should be stored locally on the device. Cloud sync is not part of the initial scope.
+The app is local-first. Cloud sync is out of scope.
 
-## 2. Target Platforms
-
-The app should support:
+## 2. Current Supported Platforms
 
 - Android
 - iOS
-- Windows desktop
+- Windows
 
-Flutter will be used as the main application framework.
+Flutter is the main framework.
 
-## 3. Primary Goals
+## 3. Implemented Functional Scope
 
-- Let users create multiple picture-based reminders.
-- Support taking pictures with the camera on mobile devices.
-- Support importing images from gallery/files.
-- Store images locally in app-managed storage.
-- Compress/resize images because high resolution is not required.
-- Schedule reminders for exact date/time.
-- Support quick reminder options, such as:
-  - after 10 minutes
-  - after 1 hour
-  - later today
-  - tomorrow
-- Allow snoozing/re-reminding after a selected period.
-- Work offline.
-- Keep all user data local.
-- Provide good integration with phone notification systems where possible.
+### 3.1 Reminder Management
 
-## 4. Non-Goals for Initial Version
+The app currently supports:
 
-The following are not required for the first version:
+- Create reminder
+- View reminder list
+- View reminder detail
+- Mark reminder as done
+- Snooze reminder
+- Delete reminder
+
+### 3.2 Image Handling
+
+The app currently supports:
+
+- Pick an image from local source
+- Take a photo on supported mobile devices
+- Store a local copy for each reminder
+- Display image preview in list/detail/create flows
+- Delete stored image when reminder is deleted
+
+### 3.3 Notification Handling
+
+The app currently supports:
+
+- Schedule local notifications
+- Cancel scheduled notifications when reminder is completed or deleted
+- Open reminder detail from notification tap
+
+### 3.4 Settings
+
+The app currently supports:
+
+- Settings & info screen
+- Language selection
+- Version/build information display
+- Premium/free status display
+
+### 3.5 Localization
+
+Supported UI languages:
+
+- English
+- Finnish
+- Swedish
+- Japanese
+- German
+
+### 3.6 Premium / Free Access
+
+Current premium behavior:
+
+- Free plan allows up to 2 active reminders
+- Premium allows unlimited active reminders
+- In-app purchase groundwork exists
+- Add-code simulation exists for premium testing
+- Paid version has been simulated/tested on iOS, not Android yet
+
+### 3.7 iOS Shared Image Import Groundwork
+
+Current iOS share-related support includes:
+
+- Shared image receiver infrastructure
+- Pending reminder import handling for iOS
+- Premium state sync hook for iOS shared import flow
+
+## 4. Current Non-Goals / Not Yet Implemented
+
+Not currently implemented or not fully complete:
 
 - Cloud sync
 - User accounts
-- Web app support
-- Sharing reminders between users
-- AI image recognition
-- Calendar sync
-- Recurring reminders beyond simple snooze/reschedule
-- Guaranteed alarm-level exactness on every platform/device
+- Full recurring reminders
+- Reminder edit flow after creation
+- Completed history screen
+- Android premium purchase validation parity with iOS simulation
+- Rich notification action buttons
+- Fully polished Windows notification behavior
 
 ## 5. Core User Flows
 
-### 5.1 Create Reminder from Camera
+### 5.1 Create Reminder
 
-1. User taps `New Reminder`.
-2. User chooses `Take Photo`.
-3. App requests camera permission if needed.
-4. User takes a photo.
-5. App compresses/resizes the image.
-6. App stores the image locally.
-7. User selects reminder time.
-8. User optionally adds title/notes.
-9. App saves reminder metadata locally.
-10. App schedules a local notification.
+1. User taps `New reminder`.
+2. User chooses picture or takes a photo.
+3. User enters reminder text.
+4. User selects sound mode.
+5. User selects time.
+6. App saves reminder locally.
+7. App schedules local notification.
 
-### 5.2 Create Reminder from Existing Image
+### 5.2 Reminder Fires
 
-1. User taps `New Reminder`.
-2. User chooses `Pick Image` or `Choose File`.
-3. App requests gallery/file permission if needed.
-4. User selects an image.
-5. App copies, compresses, and stores the image locally.
-6. User selects reminder time.
-7. App saves reminder and schedules notification.
+1. OS shows local notification.
+2. User taps notification.
+3. App opens reminder detail screen.
+4. User can mark done, snooze, or delete.
 
-### 5.3 Reminder Fires
+### 5.3 Snooze Reminder
 
-1. Operating system shows a local notification.
-2. Notification contains reminder title/text.
-3. Where supported, notification may show an image preview.
-4. User taps notification.
-5. App opens directly to the reminder detail screen showing the picture.
-6. User can:
-   - mark as done
-   - snooze
-   - edit reminder time
-   - delete reminder
+Current snooze choices:
 
-### 5.4 Snooze Reminder
+- 5 minutes
+- 10 minutes
+- 1 hour
+- tomorrow
 
-1. User opens a reminder from notification or reminder list.
-2. User selects `Snooze`.
-3. User chooses duration, for example:
-   - 5 minutes
-   - 10 minutes
-   - 1 hour
-   - tomorrow
-   - custom time
-4. App updates the reminder scheduled time.
-5. App schedules a new local notification.
+Flow:
 
-## 6. Functional Requirements
+1. User opens reminder detail.
+2. User selects snooze.
+3. User chooses one of the fixed durations.
+4. App updates `scheduledAt`.
+5. App reschedules notification.
 
-### 6.1 Reminder Management
+### 5.4 Free Limit / Premium Upgrade
 
-The app must allow users to:
+1. User tries to create more than 2 active reminders on free plan.
+2. App shows premium upgrade dialog.
+3. User can:
+   - upgrade/buy (groundwork)
+   - add test code
+   - cancel
 
-- Create reminders.
-- View active reminders.
-- View completed reminders, if history is enabled.
-- Edit reminder title/notes/time.
-- Delete reminders.
-- Mark reminders as done.
-- Snooze reminders.
+## 6. Current Data Model
 
-### 6.2 Picture Management
-
-The app must allow users to:
-
-- Take a photo on supported devices.
-- Import an image from gallery or file system.
-- Store a local copy of each reminder image.
-- Compress or resize images before storage.
-- Display image previews in reminder lists and detail pages.
-- Delete image files when associated reminders are permanently deleted.
-
-### 6.3 Scheduling
-
-The app must support:
-
-- Exact date/time selection.
-- Relative time selection, such as `after 1 hour`.
-- Updating scheduled notification when reminder time changes.
-- Cancelling scheduled notification when reminder is deleted or completed.
-
-### 6.4 Notifications
-
-The app should use local notifications.
-
-Notification behavior:
-
-- Basic notification should work on Android and iOS when app is closed.
-- Windows notification support should be implemented if practical with available Flutter plugins.
-- Notification tap should open the related reminder detail page.
-- Snooze actions directly in notifications are desirable but not required for MVP.
-- Image previews inside notifications are desirable but platform-dependent.
-
-### 6.5 Local-Only Storage
-
-All app data must be stored locally:
-
-- Reminder metadata in local database.
-- Images in app documents/application support directory.
-- Notification IDs stored with reminders.
-
-No backend server is required.
-
-## 7. Data Model
-
-### 7.1 Reminder
-
-Suggested fields:
+Reminder fields currently in use:
 
 ```text
 id: string
 title: string?
 note: string?
 imagePath: string
-thumbnailPath: string?
 scheduledAt: DateTime
 createdAt: DateTime
 updatedAt: DateTime
 completedAt: DateTime?
-status: active | completed | cancelled
-notificationId: int
+status: active | completed
 snoozeCount: int
+notificationId: int
+soundMode: notification | alarm
 lastSnoozedAt: DateTime?
 ```
 
-### 7.2 Reminder Status
+## 7. Current Storage Model
 
-```text
-active
-completed
-cancelled
-```
+Current persistence approach:
 
-### 7.3 Local File Structure
+- Reminder metadata stored in `SharedPreferences` as JSON
+- Image files stored locally on disk
+- Premium flag stored in `SharedPreferences`
+- Selected locale stored in `SharedPreferences`
 
-Recommended structure inside app documents/application support directory:
+## 8. Current Technical Choices
 
-```text
-pic_reminder/
-  images/
-    reminder_<id>.jpg
-  thumbnails/
-    reminder_<id>_thumb.jpg
-  database/
-    app.db
-```
+- Flutter UI
+- `ChangeNotifier` / `ValueNotifier` state updates
+- `flutter_local_notifications` for notifications
+- `timezone` and `flutter_timezone` for local scheduling
+- `image_picker` for photo/image selection
+- Flutter gen-l10n for localization
 
-## 8. Recommended Flutter Packages
+## 9. Future Enhancements
 
-Final package selection should be confirmed during implementation, but likely packages include:
+Planned or possible future improvements:
 
-### Core
-
-```yaml
-flutter_local_notifications
-timezone
-path_provider
-permission_handler
-uuid
-```
-
-### Image Input
-
-```yaml
-image_picker
-file_picker
-camera
-```
-
-### Image Processing
-
-```yaml
-flutter_image_compress
-```
-
-### Local Database
-
-Choose one main local database solution:
-
-Option A — SQLite/Drift:
-
-```yaml
-drift
-sqlite3_flutter_libs
-path
-```
-
-Option B — Isar:
-
-```yaml
-isar
-isar_flutter_libs
-```
-
-For this app, SQLite/Drift is a strong choice because reminder data is structured and should remain reliable over time.
-
-## 9. Platform Considerations
-
-### 9.1 Android
-
-Android supports local notifications well, but modern Android versions require attention to permissions and exact alarm behavior.
-
-Considerations:
-
-- Android 13+ requires notification permission.
-- Exact alarms may require additional permission or settings.
-- Battery optimization may delay notifications on some devices.
-- Big picture style notifications may be possible.
-- Notification action buttons may support snooze/done actions.
-
-### 9.2 iOS
-
-iOS supports local notifications but has stricter background limitations.
-
-Considerations:
-
-- Notification permission is required.
-- App cannot freely run background code when notification fires.
-- Pending local notifications may be limited by the OS.
-- Notification attachments may allow image previews, but require platform-specific setup.
-- Snooze actions may be possible through notification categories, but MVP can handle snooze inside the app.
-
-### 9.3 Windows
-
-Windows support is feasible for local storage and in-app reminders.
-
-Considerations:
-
-- Toast notification support depends on Flutter/plugin capabilities.
-- Reliable scheduled notifications while the app is fully closed may require extra Windows-specific work.
-- For MVP, Windows may initially support reminders best while app is running, with later improvement for native toast integration.
-
-## 10. MVP Scope
-
-The minimum useful version should include:
-
-- Create reminder with imported image.
-- Create reminder with camera image on mobile.
-- Compress/store image locally.
-- Select exact reminder date/time.
-- Quick options: after 10 minutes, after 1 hour, tomorrow.
-- Store reminder metadata locally.
-- Schedule local notification.
-- Open reminder detail from notification tap.
-- Mark reminder as done.
-- Snooze from inside app.
-- Delete reminder and image.
-
-## 11. Future Enhancements
-
-- Image preview directly in notifications.
-- Notification action buttons:
-  - snooze 10 minutes
-  - mark done
-- Recurring picture reminders.
-- Reminder history/archive.
-- Search reminders.
-- Tags/categories.
-- Optional backup/export.
-- Better Windows scheduled notification integration.
-- Share-to-app integration, allowing users to create reminders from other apps.
-- Screenshot/share extension support where practical.
-
-## 12. Risks and Limitations
-
-- Notification timing may not be exact on every Android device due to battery optimization.
-- iOS limits background processing and pending scheduled notifications.
-- Windows notification behavior may require platform-specific implementation.
-- Showing images directly inside notifications is not guaranteed equally on all platforms.
-- Camera support differs between mobile and desktop.
-
-## 13. Success Criteria
-
-The app is successful when a user can reliably:
-
-1. Save or take a picture.
-2. Attach it to a reminder.
-3. Receive a notification at the selected time.
-4. Tap the notification and see the picture.
-5. Snooze, complete, edit, or delete the reminder.
+- Android premium purchase verification and testing
+- Reminder editing
+- Completed reminder history
+- Better Windows support and validation
+- Rich notification actions
+- Recurring reminders
+- Better import/share flows across platforms

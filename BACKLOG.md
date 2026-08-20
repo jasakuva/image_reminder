@@ -2,145 +2,82 @@
 
 ## Priority Legend
 
-- P0: Required for MVP.
-- P1: Important soon after MVP.
-- P2: Nice to have.
-- P3: Future/advanced.
+- P0: Current critical follow-up
+- P1: Important next improvements
+- P2: Useful polish / expansion
+- P3: Longer-term ideas
 
-## P0 — MVP
+## P0 — Stabilization and Validation
 
-### Project Setup
+- [ ] Refresh widget tests to match current UI/navigation behavior
+- [ ] Add targeted tests for reminder create/snooze/complete/delete flows
+- [ ] Validate premium purchase flow on Android
+- [ ] Re-check localization coverage after recent UI changes
+- [ ] Continue manual iOS shared import testing
 
-- [ ] Create Flutter project in repository.
-- [ ] Enable Android support.
-- [ ] Enable iOS support.
-- [ ] Enable Windows support.
-- [ ] Add linting rules.
-- [ ] Create initial folder structure.
+## P1 — Core Product Improvements
 
-### Local Data
+- [ ] Add completed reminder history screen
+- [ ] Add reminder editing after creation
+- [ ] Improve sort/filter options in reminder list
+- [ ] Improve missing/corrupt image recovery UX
+- [ ] Improve premium and billing status/error UX
 
-- [ ] Choose local database.
-- [ ] Create reminder model.
-- [ ] Create reminder status enum.
-- [ ] Create local reminder repository.
-- [ ] Save reminder.
-- [ ] Load active reminders.
-- [ ] Update reminder.
-- [ ] Delete reminder.
+## P1 — Mobile Platform Improvements
 
-### Image Storage
+- [ ] Improve Android notification permission UX
+- [ ] Investigate Android exact alarm behavior if needed
+- [ ] Validate premium purchase flow end-to-end on Android devices
+- [ ] Continue hardening iOS share/pending reminder import flow
 
-- [ ] Pick image from gallery/files.
-- [ ] Copy selected image to app storage.
-- [ ] Compress image.
-- [ ] Generate thumbnail.
-- [ ] Delete stored image when reminder is deleted.
-- [ ] Handle missing/corrupt image file.
+## P2 — Desktop / Windows Improvements
 
-### Reminder UI
+- [ ] Validate Windows reminder flow more thoroughly
+- [ ] Improve Windows-specific image import UX
+- [ ] Investigate Windows notification behavior when app is closed
+- [ ] Improve desktop layout/polish
 
-- [ ] Create home/reminder list screen.
-- [ ] Create empty state.
-- [ ] Create new reminder screen.
-- [ ] Add image preview.
-- [ ] Add date/time picker.
-- [ ] Add quick time buttons.
-- [ ] Add reminder detail screen.
-- [ ] Add delete action.
-- [ ] Add mark done action.
+## P2 — Notification Enhancements
 
-### Notifications
+- [ ] Add richer notification body/content
+- [ ] Explore notification action buttons
+- [ ] Investigate image preview/attachment support by platform
+- [ ] Add better alarm/reminder sound customization if needed
 
-- [x] Add local notifications package.
-- [x] Initialize notification service.
-- [x] Request notification permission.
-- [x] Schedule notification for reminder.
-- [x] Cancel notification when reminder is deleted.
-- [x] Cancel notification when reminder is completed.
-- [x] Handle notification tap payload.
-- [x] Navigate to reminder detail from notification.
+## P2 — Product Polish
 
-### Snooze
+- [ ] Add app icon polish
+- [ ] Improve onboarding/help text if needed
+- [ ] Improve settings/info presentation
+- [ ] Expand manual test checklist documentation
 
-- [ ] Add snooze UI on detail screen.
-- [ ] Add fixed snooze options.
-- [ ] Add custom snooze time.
-- [ ] Reschedule notification after snooze.
-- [ ] Track snooze count.
+## P3 — Advanced Features
 
-## P1 — Phone Integration Improvements
+- [ ] Recurring reminders
+- [ ] Search/filter by more criteria
+- [ ] Tags/categories
+- [ ] Export/backup reminders
+- [ ] Optional encrypted storage
+- [ ] Optional cloud sync
 
-- [ ] Add camera capture on Android.
-- [ ] Add camera capture on iOS.
-- [ ] Improve Android notification permission UX.
-- [ ] Improve iOS notification permission UX.
-- [ ] Add Android exact alarm investigation.
-- [ ] Add Android battery optimization information screen if needed.
-- [ ] Add notification image preview on Android if supported.
-- [ ] Add notification image attachment on iOS if supported.
+## Already Implemented
 
-## P1 — App Polish
+These major items are already done in current codebase:
 
-- [ ] Add app icon.
-- [ ] Add light/dark theme.
-- [ ] Add better reminder cards.
-- [ ] Add reminder sorting.
-- [ ] Add completed reminders/history screen.
-- [ ] Add confirmation dialog before delete.
-- [ ] Add onboarding or permission explanation screen.
-
-## P2 — Windows Improvements
-
-- [ ] Add Windows file picker polish.
-- [ ] Add Windows toast notification support.
-- [ ] Investigate scheduled notifications while app is closed.
-- [ ] Improve desktop layout.
-- [ ] Add drag-and-drop image import if practical.
-
-## P2 — Reminder Features
-
-- [ ] Add recurring reminders.
-- [ ] Add tags/categories.
-- [ ] Add search.
-- [ ] Add filter by status.
-- [ ] Add archive instead of permanent delete.
-- [ ] Add duplicate reminder.
-
-## P3 — Advanced Integrations
-
-- [ ] Android share target.
-- [ ] iOS share extension.
-- [ ] Windows file association/open with.
-- [ ] Export/backup reminders.
-- [ ] Optional encrypted local storage.
-- [ ] Optional cloud sync.
-
-## First Recommended Sprint
-
-Focus only on:
-
-- Flutter project setup.
-- Static UI.
-- Local reminder model.
-- Image import.
-- Local image storage.
-- Create/list/detail reminder flow without notifications.
-
-## Second Recommended Sprint
-
-Focus on:
-
-- Local notifications.
-- Notification tap routing.
-- Snooze.
-- Mark done/delete notification cancellation.
-
-## Third Recommended Sprint
-
-Focus on:
-
-- Camera support.
-- Android/iOS permissions.
-- Windows behavior.
-- Polish and testing.
+- [x] Flutter project setup
+- [x] Android/iOS/Windows targets
+- [x] Reminder model and persistence
+- [x] Reminder create/list/detail UI
+- [x] Image import / photo selection flow
+- [x] Local image storage
+- [x] Local notifications
+- [x] Notification tap opens reminder
+- [x] Snooze with fixed options
+- [x] Mark reminder done
+- [x] Delete reminder and local image
+- [x] Settings & info screen
+- [x] Language selection
+- [x] Localization system
+- [x] Free vs premium gating groundwork
+- [x] Simulated premium unlock flow
+- [x] iOS share/import groundwork
