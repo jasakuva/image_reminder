@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/billing_service.dart';
 import '../../data/premium_access_store.dart';
+import '../../../../l10n/app_localizations.dart';
 
 const _debugPremiumCode = '126543';
 
@@ -10,6 +11,7 @@ Future<void> showUpgradePrompt(
   required PremiumAccessStore premiumAccessStore,
 }) {
   final billingService = premiumAccessStore.billingService;
+  final l10n = AppLocalizations.of(context)!;
 
   return showDialog<void>(
     context: context,
@@ -20,23 +22,21 @@ Future<void> showUpgradePrompt(
         final availability = billingService.availabilityState;
         final isLoading = billingService.isLoading;
 
-        var message =
-            'Free version supports up to 2 active reminders. Upgrade to Premium for unlimited reminders.';
+        var message = l10n.upgradeMessage;
 
         if (availability == BillingAvailabilityState.productNotFound) {
-          message =
-              'Premium purchase is coming soon. Please check back shortly. You can still use Add code for testing.';
+          message = l10n.upgradeComingSoon;
         } else if (availability == BillingAvailabilityState.unavailable) {
-          message =
-              'Purchases are temporarily unavailable on this device. You can still use Add code for testing.';
+          message = l10n.upgradeUnavailable;
         } else if (availability == BillingAvailabilityState.error &&
             billingService.errorMessage != null) {
-          message =
-              'Purchase service is not ready yet. ${billingService.errorMessage}\n\nYou can still use Add code for testing.';
+          message = l10n.purchaseServiceNotReady(
+            billingService.errorMessage!,
+          );
         }
 
         return AlertDialog(
-          title: const Text('Upgrade to Premium'),
+          title: Text(l10n.upgradeTitle),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,7 +45,7 @@ Future<void> showUpgradePrompt(
               const SizedBox(height: 16),
               if (product != null)
                 Text(
-                  'One-time purchase: ${product.price}',
+                  l10n.oneTimePurchase(product.price),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               if (isLoading) ...[
@@ -57,7 +57,7 @@ Future<void> showUpgradePrompt(
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             FilledButton.tonal(
               onPressed: () async {
@@ -67,7 +67,7 @@ Future<void> showUpgradePrompt(
                   premiumAccessStore: premiumAccessStore,
                 );
               },
-              child: const Text('Add code'),
+              child: Text(l10n.addCode),
             ),
             FilledButton(
               onPressed: product == null ||
@@ -78,7 +78,9 @@ Future<void> showUpgradePrompt(
                       Navigator.of(context).pop();
                       await billingService.buyPremiumUnlock();
                     },
-              child: Text(product == null ? 'Purchase coming soon' : 'Buy now'),
+              child: Text(
+                product == null ? l10n.purchaseComingSoon : l10n.buyNow,
+              ),
             ),
           ],
         );
@@ -92,25 +94,26 @@ Future<void> _showPremiumCodeDialog(
   required PremiumAccessStore premiumAccessStore,
 }) {
   final controller = TextEditingController();
+  final l10n = AppLocalizations.of(context)!;
 
   return showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('Add code'),
+      title: Text(l10n.addCodeTitle),
       content: TextField(
         controller: controller,
         autofocus: true,
         keyboardType: TextInputType.number,
         maxLength: 6,
-        decoration: const InputDecoration(
-          labelText: '6-digit code',
-          hintText: 'Enter code',
+        decoration: InputDecoration(
+          labelText: l10n.codeLabel,
+          hintText: l10n.codeHint,
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () async {
@@ -120,18 +123,18 @@ Future<void> _showPremiumCodeDialog(
               await premiumAccessStore.setPremium(true);
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Premium enabled.')),
+                  SnackBar(content: Text(l10n.premiumEnabledSnack)),
                 );
               }
             } else {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Invalid code.')),
+                  SnackBar(content: Text(l10n.invalidCode)),
                 );
               }
             }
           },
-          child: const Text('Apply'),
+          child: Text(l10n.apply),
         ),
       ],
     ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/motorsport_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../billing/data/premium_access_store.dart';
 import '../../../billing/presentation/widgets/upgrade_prompt.dart';
+import '../../../settings/data/locale_settings_store.dart';
 import '../../data/reminder_store.dart';
 import '../../../settings/presentation/screens/settings_info_screen.dart';
 import 'create_reminder_screen.dart';
@@ -13,25 +15,30 @@ class ReminderListScreen extends StatelessWidget {
   const ReminderListScreen({
     required this.reminderStore,
     required this.premiumAccessStore,
+    required this.localeSettingsStore,
     super.key,
   });
 
   final ReminderStore reminderStore;
   final PremiumAccessStore premiumAccessStore;
+  final LocaleSettingsStore localeSettingsStore;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ImageReminder'),
+        title: Text(l10n.appTitle),
         actions: [
           IconButton(
-            tooltip: 'Settings & info',
+            tooltip: l10n.settingsInfo,
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => SettingsInfoScreen(
                     premiumAccessStore: premiumAccessStore,
+                    localeSettingsStore: localeSettingsStore,
                   ),
                 ),
               );
@@ -57,8 +64,8 @@ class ReminderListScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return RaceHeader(
-                    title: '${reminders.length} reminders',
-                    subtitle: 'Your image reminders in one clear place',
+                    title: l10n.remindersCount(reminders.length),
+                    subtitle: l10n.remindersSubtitle,
                   );
                 }
 
@@ -101,7 +108,7 @@ class ReminderListScreen extends StatelessWidget {
           );
         },
         icon: const Icon(Icons.add_a_photo_outlined),
-        label: const Text('New reminder'),
+        label: Text(l10n.newReminder),
       ),
     );
   }
@@ -113,6 +120,7 @@ class _EmptyReminderList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Center(
       child: Padding(
@@ -127,13 +135,13 @@ class _EmptyReminderList extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No image reminders yet',
+              l10n.noImageRemindersYet,
               style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Create your first reminder by choosing or taking a picture and selecting a time.',
+              l10n.createFirstReminderHint,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: MotorsportColors.muted,

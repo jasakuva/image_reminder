@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pic_reminder/app.dart';
 import 'package:pic_reminder/features/billing/data/premium_access_store.dart';
 import 'package:pic_reminder/features/reminders/data/reminder_store.dart';
+import 'package:pic_reminder/features/settings/data/locale_settings_store.dart';
 
 void main() {
   testWidgets('shows empty reminder list', (tester) async {
@@ -10,6 +11,7 @@ void main() {
       PictureReminderApp(
         reminderStore: ReminderStore(),
         premiumAccessStore: PremiumAccessStore(),
+        localeSettingsStore: LocaleSettingsStore(),
       ),
     );
 
@@ -24,6 +26,7 @@ void main() {
       PictureReminderApp(
         reminderStore: ReminderStore(),
         premiumAccessStore: PremiumAccessStore(),
+        localeSettingsStore: LocaleSettingsStore(),
       ),
     );
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/time/date_formatters.dart';
 import '../../../../core/theme/motorsport_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../data/reminder_store.dart';
 import '../../domain/reminder_sound_mode.dart';
 import '../../domain/reminder_status.dart';
@@ -20,6 +21,8 @@ class ReminderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return ListenableBuilder(
       listenable: reminderStore,
       builder: (context, _) {
@@ -27,17 +30,17 @@ class ReminderDetailScreen extends StatelessWidget {
 
         if (reminder == null) {
           return Scaffold(
-            appBar: AppBar(title: const Text('Reminder not found')),
-            body: const Center(child: Text('This reminder no longer exists.')),
+            appBar: AppBar(title: Text(l10n.reminderNotFound)),
+            body: Center(child: Text(l10n.reminderNoLongerExists)),
           );
         }
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Reminder detail'),
+            title: Text(l10n.reminderDetail),
             actions: [
               IconButton(
-                tooltip: 'Delete',
+                tooltip: l10n.delete,
                 onPressed: () => _confirmDelete(context),
                 icon: const Icon(Icons.delete_outline),
               ),
@@ -50,8 +53,8 @@ class ReminderDetailScreen extends StatelessWidget {
                 RaceHeader(
                   title: reminder.notifyText,
                   subtitle: reminder.status == ReminderStatus.active
-                      ? 'Active image reminder'
-                      : 'Reminder completed',
+                      ? l10n.activeImageReminder
+                      : l10n.reminderCompleted,
                   icon: reminder.status == ReminderStatus.active
                       ? Icons.notifications_active_outlined
                       : Icons.check_circle_outline,
@@ -78,16 +81,16 @@ class ReminderDetailScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 _InfoCard(
                   icon: Icons.event_outlined,
-                  title: 'Scheduled',
+                  title: l10n.scheduled,
                   value: formatReminderDate(reminder.scheduledAt),
                   subtitle: reminder.status == ReminderStatus.active
-                      ? formatRelativeReminderTime(reminder.scheduledAt)
-                      : 'Completed',
+                      ? formatRelativeReminderTime(reminder.scheduledAt, l10n)
+                      : l10n.completed,
                 ),
                 const SizedBox(height: 12),
                 _InfoCard(
                   icon: Icons.campaign_outlined,
-                  title: 'Notify',
+                  title: l10n.notify,
                   value: reminder.notifyText,
                 ),
                 const SizedBox(height: 12),
@@ -95,21 +98,21 @@ class ReminderDetailScreen extends StatelessWidget {
                   icon: reminder.soundMode == ReminderSoundMode.alarm
                       ? Icons.alarm_outlined
                       : Icons.notifications_outlined,
-                  title: 'Sound',
-                  value: _soundModeLabel(reminder.soundMode),
+                  title: l10n.sound,
+                  value: _soundModeLabel(reminder.soundMode, l10n),
                 ),
                 const SizedBox(height: 16),
                 if (reminder.status == ReminderStatus.active) ...[
                   FilledButton.icon(
                     onPressed: () => _markCompleted(context),
                     icon: const Icon(Icons.check_circle_outline),
-                    label: const Text('Mark done'),
+                    label: Text(l10n.markDone),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () => _showSnoozeOptions(context),
                     icon: const Icon(Icons.snooze_outlined),
-                    label: const Text('Snooze / remind again'),
+                    label: Text(l10n.snoozeRemindAgain),
                   ),
                 ],
               ],
@@ -121,31 +124,31 @@ class ReminderDetailScreen extends StatelessWidget {
   }
 
   Future<void> _markCompleted(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     await reminderStore.markCompleted(reminderId);
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Reminder completed.')));
+      ).showSnackBar(SnackBar(content: Text(l10n.reminderCompletedSnack)));
     }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Delete reminder?'),
-          content: const Text(
-            'This deletes the reminder and its locally stored picture.',
-          ),
+          title: Text(l10n.deleteReminderQuestion),
+          content: Text(l10n.deleteReminderDescription),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
+              child: Text(l10n.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete'),
+              child: Text(l10n.delete),
             ),
           ],
         );
@@ -163,6 +166,8 @@ class ReminderDetailScreen extends StatelessWidget {
   }
 
   Future<void> _showSnoozeOptions(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+
     final duration = await showModalBottomSheet<Duration>(
       context: context,
       showDragHandle: true,
@@ -173,25 +178,25 @@ class ReminderDetailScreen extends StatelessWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.timer_outlined),
-                title: const Text('5 minutes'),
+                title: Text(l10n.snooze5Minutes),
                 onTap: () =>
                     Navigator.of(context).pop(const Duration(minutes: 5)),
               ),
               ListTile(
                 leading: const Icon(Icons.timer_outlined),
-                title: const Text('10 minutes'),
+                title: Text(l10n.snooze10Minutes),
                 onTap: () =>
                     Navigator.of(context).pop(const Duration(minutes: 10)),
               ),
               ListTile(
                 leading: const Icon(Icons.schedule_outlined),
-                title: const Text('1 hour'),
+                title: Text(l10n.snooze1Hour),
                 onTap: () =>
                     Navigator.of(context).pop(const Duration(hours: 1)),
               ),
               ListTile(
                 leading: const Icon(Icons.today_outlined),
-                title: const Text('Tomorrow'),
+                title: Text(l10n.tomorrow),
                 onTap: () => Navigator.of(context).pop(const Duration(days: 1)),
               ),
             ],
@@ -208,14 +213,14 @@ class ReminderDetailScreen extends StatelessWidget {
     if (context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Reminder snoozed.')));
+      ).showSnackBar(SnackBar(content: Text(l10n.reminderSnoozed)));
     }
   }
 
-  String _soundModeLabel(ReminderSoundMode soundMode) {
+  String _soundModeLabel(ReminderSoundMode soundMode, AppLocalizations l10n) {
     return switch (soundMode) {
-      ReminderSoundMode.notification => 'Notification sound',
-      ReminderSoundMode.alarm => 'Alarm sound',
+      ReminderSoundMode.notification => l10n.soundLabelNotification,
+      ReminderSoundMode.alarm => l10n.soundLabelAlarm,
     };
   }
 }

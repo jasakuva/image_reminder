@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/time/date_formatters.dart';
 import '../../../../core/theme/motorsport_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../billing/data/premium_access_store.dart';
 import '../../../billing/presentation/widgets/upgrade_prompt.dart';
 import '../../../images/data/local_image_storage_service.dart';
@@ -55,15 +56,17 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('New reminder')),
+      appBar: AppBar(title: Text(l10n.newReminderTitle)),
       body: RaceScaffoldBackground(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            const RaceHeader(
-              title: 'Create image reminder',
-              subtitle: 'Choose an image, message, sound, and time',
+            RaceHeader(
+              title: l10n.createImageReminder,
+              subtitle: l10n.createImageReminderSubtitle,
               icon: Icons.add_photo_alternate_outlined,
             ),
             const SizedBox(height: 16),
@@ -77,10 +80,10 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
               controller: _notifyController,
               textCapitalization: TextCapitalization.sentences,
               maxLines: 2,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.campaign_outlined),
-                labelText: 'Notify',
-                hintText: 'What should the reminder say?',
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.campaign_outlined),
+                labelText: l10n.notify,
+                hintText: l10n.notifyHint,
               ),
             ),
             const SizedBox(height: 16),
@@ -105,7 +108,7 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.notifications_active_outlined),
-              label: const Text('Save reminder'),
+              label: Text(l10n.saveReminder),
             ),
           ],
         ),
@@ -161,6 +164,8 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
   }
 
   Future<void> _saveReminder() async {
+    final l10n = AppLocalizations.of(context)!;
+
     if (widget.reminderStore.hasReachedFreeReminderLimit(widget.premiumAccessStore.isPremium)) {
       await showUpgradePrompt(
         context,
@@ -171,12 +176,12 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
 
     final selectedImagePath = _selectedImagePath;
     if (selectedImagePath == null) {
-      _showSnackBar('Choose or take a picture first.');
+      _showSnackBar(l10n.choosePictureFirst);
       return;
     }
 
-    if (!_scheduledAt.isAfter(DateTime.now())) {
-      _showSnackBar('Choose a reminder time in the future.');
+    if (_scheduledAt.isBefore(DateTime.now())) {
+      _showSnackBar(l10n.futureReminderTime);
       return;
     }
 
@@ -213,7 +218,7 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
       }
     } catch (error) {
       if (mounted) {
-        _showSnackBar('Could not save reminder: $error');
+        _showSnackBar(l10n.couldNotSaveReminder(error.toString()));
       }
     } finally {
       if (mounted) {
@@ -238,6 +243,7 @@ class _SoundModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       child: Padding(
@@ -252,21 +258,21 @@ class _SoundModeSelector extends StatelessWidget {
                   color: MotorsportColors.pitRed,
                 ),
                 const SizedBox(width: 8),
-                Text('Sound', style: theme.textTheme.titleMedium),
+                Text(l10n.sound, style: theme.textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 12),
             SegmentedButton<ReminderSoundMode>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: ReminderSoundMode.notification,
-                  icon: Icon(Icons.notifications_outlined),
-                  label: Text('Notification'),
+                  icon: const Icon(Icons.notifications_outlined),
+                  label: Text(l10n.notification),
                 ),
                 ButtonSegment(
                   value: ReminderSoundMode.alarm,
-                  icon: Icon(Icons.alarm_outlined),
-                  label: Text('Alarm'),
+                  icon: const Icon(Icons.alarm_outlined),
+                  label: Text(l10n.alarm),
                 ),
               ],
               selected: {soundMode},
@@ -292,6 +298,8 @@ class _ImageSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -321,12 +329,12 @@ class _ImageSelector extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: onPickGallery,
                   icon: const Icon(Icons.photo_library_outlined),
-                  label: const Text('Choose picture'),
+                  label: Text(l10n.choosePicture),
                 ),
                 OutlinedButton.icon(
                   onPressed: onTakePhoto,
                   icon: const Icon(Icons.photo_camera_outlined),
-                  label: const Text('Take photo'),
+                  label: Text(l10n.takePhoto),
                 ),
               ],
             ),
@@ -351,6 +359,7 @@ class _ReminderTimeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       child: Padding(
@@ -365,7 +374,7 @@ class _ReminderTimeSelector extends StatelessWidget {
                   color: MotorsportColors.pitRed,
                 ),
                 const SizedBox(width: 8),
-                Text('Reminder time', style: theme.textTheme.titleMedium),
+                Text(l10n.reminderTime, style: theme.textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 8),
@@ -382,20 +391,20 @@ class _ReminderTimeSelector extends StatelessWidget {
               runSpacing: 8,
               children: [
                 ActionChip(
-                  label: const Text('10 min'),
+                  label: Text(l10n.tenMinutes),
                   onPressed: () => onQuickSelect(const Duration(minutes: 10)),
                 ),
                 ActionChip(
-                  label: const Text('1 hour'),
+                  label: Text(l10n.snooze1Hour),
                   onPressed: () => onQuickSelect(const Duration(hours: 1)),
                 ),
                 ActionChip(
-                  label: const Text('Tomorrow'),
+                  label: Text(l10n.tomorrow),
                   onPressed: () => onQuickSelect(const Duration(days: 1)),
                 ),
                 ActionChip(
                   avatar: const Icon(Icons.calendar_today_outlined, size: 18),
-                  label: const Text('Custom'),
+                  label: Text(l10n.custom),
                   onPressed: onChooseDateTime,
                 ),
               ],

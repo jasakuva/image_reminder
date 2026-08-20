@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/time/date_formatters.dart';
 import '../../../../core/theme/motorsport_theme.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../domain/picture_reminder.dart';
 import '../../domain/reminder_sound_mode.dart';
 import '../../domain/reminder_status.dart';
@@ -61,6 +62,7 @@ class _ReminderCardState extends State<ReminderCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final reminder = widget.reminder;
+    final l10n = AppLocalizations.of(context)!;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -128,8 +130,8 @@ class _ReminderCardState extends State<ReminderCard> {
                                 ? Icons.speed_outlined
                                 : Icons.flag_outlined,
                             text: reminder.status == ReminderStatus.active
-                                 ? formatRelativeReminderTime(reminder.scheduledAt)
-                                : 'Completed',
+                                 ? formatRelativeReminderTime(reminder.scheduledAt, l10n)
+                                : l10n.completed,
                             color: reminder.status == ReminderStatus.active
                                 ? MotorsportColors.pitRed
                                 : MotorsportColors.muted,
@@ -139,8 +141,8 @@ class _ReminderCardState extends State<ReminderCard> {
                                 ? Icons.alarm_outlined
                                 : Icons.notifications_outlined,
                             text: reminder.soundMode == ReminderSoundMode.alarm
-                                ? 'Alarm'
-                                : 'Notify',
+                                ? l10n.alarm
+                                : l10n.notification,
                             color: reminder.soundMode == ReminderSoundMode.alarm
                                 ? MotorsportColors.racingYellow
                                 : MotorsportColors.muted,
