@@ -153,6 +153,30 @@ class SharedImageReceiver {
     });
   }
 
+  Future<void> syncPremiumAccessState({
+    required bool isPremium,
+    required int activeReminderCount,
+  }) async {
+    if (defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+
+    try {
+      await _platformChannel.invokeMethod<void>('syncPremiumAccessState', {
+        'isPremium': isPremium,
+        'activeReminderCount': activeReminderCount,
+      });
+    } on MissingPluginException {
+      debugPrint(
+        '[SharedImageReceiver] ERROR: syncPremiumAccessState channel is not registered.',
+      );
+    } on PlatformException catch (error) {
+      debugPrint(
+        '[SharedImageReceiver] PlatformException while syncing premium state: ${error.code} ${error.message}',
+      );
+    }
+  }
+
   MethodChannel get _platformChannel {
     return defaultTargetPlatform == TargetPlatform.iOS
         ? _iosChannel

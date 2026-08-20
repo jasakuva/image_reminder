@@ -1,23 +1,19 @@
 # Picture Reminder — Decisions
 
-This file records technical decisions and open questions for the project.
+This file records current implementation decisions and open follow-up topics.
 
 ## Decision Status
 
-- Proposed: likely choice, not final.
-- Accepted: chosen and should be followed.
-- Rejected: considered but not chosen.
-- Open: still needs decision.
+- Proposed: likely choice, may still change
+- Accepted: in use now
+- Rejected: considered but not used
+- Open: still needs decision
 
 ## Accepted Decisions
 
-No final implementation decisions have been made yet.
-
-## Proposed Decisions
-
 ### D001 — Use Flutter
 
-Status: Proposed
+Status: Accepted
 
 Decision:
 
@@ -25,162 +21,169 @@ Use Flutter for Android, iOS, and Windows.
 
 Reason:
 
-- Single main codebase.
-- Good support for mobile UI.
-- Windows desktop support is available.
-- Plugin ecosystem supports camera, files, local storage, and notifications.
+- Single codebase
+- Good plugin support for notifications, image picking, billing, and localization
+- Practical for mobile-first app with desktop target present
 
-### D002 — Store All Data Locally
+### D002 — Local-First Storage
+
+Status: Accepted
+
+Decision:
+
+Keep user data local on device.
+
+Reason:
+
+- Matches app goals
+- Keeps implementation simple
+- Better privacy
+- No backend required
+
+### D003 — Store Images as Files
+
+Status: Accepted
+
+Decision:
+
+Store reminder images as files and keep only paths in reminder metadata.
+
+Reason:
+
+- Better performance for image display
+- Easy cleanup on delete
+- Keeps metadata smaller
+
+### D004 — Use Simple Notifier-Based State
+
+Status: Accepted
+
+Decision:
+
+Use `ChangeNotifier`, `ValueNotifier`, and `ListenableBuilder` for current app state.
+
+Reason:
+
+- Sufficient for current scope
+- Lower complexity than introducing larger state framework now
+
+### D005 — Notification Tap Opens Reminder Detail
+
+Status: Accepted
+
+Decision:
+
+Notification taps route to the related reminder detail screen.
+
+Reason:
+
+- Simple and reliable behavior
+- Matches app’s main user expectation
+
+### D006 — Snooze Inside App First
+
+Status: Accepted
+
+Decision:
+
+Implement snooze from reminder detail screen before adding rich notification actions.
+
+Reason:
+
+- Lower cross-platform complexity
+- Current feature set already satisfies main postponing need
+
+### D007 — Use Flutter gen-l10n for Localization
+
+Status: Accepted
+
+Decision:
+
+Use generated Flutter localization with ARB files under `lib/l10n`.
+
+Reason:
+
+- Standard Flutter approach
+- Easy to maintain multiple languages
+- Strong typed string access in UI
+
+### D008 — Use SharedPreferences for Current Reminder Persistence
+
+Status: Accepted
+
+Decision:
+
+Persist reminders as JSON in `SharedPreferences` for the current version.
+
+Reason:
+
+- Fast to implement
+- Good enough for current reminder volume and app maturity
+- Can be migrated later if needed
+
+### D009 — Premium Access Uses Free Limit + Simulated Unlock
+
+Status: Accepted
+
+Decision:
+
+Use a free active reminder limit of 2 and support simulated premium unlock while billing integration matures.
+
+Reason:
+
+- Enables premium UX testing now
+- Keeps product flow moving while purchase validation is still ongoing
+
+## Proposed Decisions
+
+### D010 — Migrate Reminder Metadata to Structured Local Database Later
 
 Status: Proposed
 
 Decision:
 
-Store reminder metadata and image files locally on the device.
+Consider migrating reminder metadata from `SharedPreferences` JSON to a structured local database if the app grows.
 
 Reason:
 
-- Matches app requirement.
-- Keeps MVP simple.
-- Avoids backend/server cost.
-- Better privacy.
-
-### D003 — Use Drift/SQLite for Reminder Metadata
-
-Status: Proposed
-
-Decision:
-
-Use Drift with SQLite for structured reminder data.
-
-Reason:
-
-- Reliable local database.
-- Good for structured queries.
-- Easier long-term migrations than simple key-value storage.
-
-Alternatives:
-
-- Hive
-- Isar
-- sqflite
-
-### D004 — Store Images as Files, Not Database Blobs
-
-Status: Proposed
-
-Decision:
-
-Store images in local app storage and store only image paths in the database.
-
-Reason:
-
-- Better performance.
-- Easier image display.
-- Database stays smaller.
-- Easier deletion and cleanup.
-
-### D005 — Notification Opens App to Picture
-
-Status: Proposed
-
-Decision:
-
-For MVP, notification tap opens the app directly to the reminder detail screen.
-
-Reason:
-
-- Reliable across Android and iOS.
-- Avoids relying on image-rich notification behavior for MVP.
-- User still sees the picture quickly.
-
-### D006 — Snooze Inside App for MVP
-
-Status: Proposed
-
-Decision:
-
-Implement snooze from inside the app first, not directly from notification action buttons.
-
-Reason:
-
-- Simpler cross-platform implementation.
-- Notification action buttons differ by platform.
-- Can add notification actions later.
+- Better long-term scalability
+- Cleaner filtering/history/edit support
 
 ## Open Questions
 
-### Q001 — Should Completed Reminders Be Kept?
+### Q001 — Should Completed Reminders Get Their Own History Screen?
 
-Options:
+Current recommendation:
 
-1. Keep completed reminders in history.
-2. Delete completed reminders automatically.
-3. Ask user each time.
+- Yes, likely as a next UX improvement.
 
-Recommended:
+### Q002 — How Far Should Android Billing Be Validated Before Release?
 
-Keep completed reminders in history at first, with manual delete.
+Current recommendation:
 
-### Q002 — How Exact Must Reminder Timing Be?
+- Finish Android purchase validation before calling premium fully production-ready.
 
-Options:
+### Q003 — Should Windows Stay Fully Supported for Reminder Notifications?
 
-1. Best-effort local notification timing.
-2. Exact alarm behavior where platform allows it.
-3. Alarm-clock-level reliability.
+Current recommendation:
 
-Recommended:
-
-Start with best-effort local notifications. Investigate exact alarms later if needed.
-
-### Q003 — Should Windows Reminders Work When App Is Closed?
-
-Options:
-
-1. Required for MVP.
-2. Nice to have after mobile MVP.
-3. Not required.
-
-Recommended:
-
-Nice to have after mobile MVP.
-
-### Q004 — Which State Management Should Be Used?
-
-Options:
-
-1. Built-in `ChangeNotifier` / `ValueNotifier`.
-2. Riverpod.
-3. Bloc.
-
-Recommended:
-
-Start simple. Use Riverpod if app state becomes complex.
-
-### Q005 — Should Images Be Encrypted?
-
-Options:
-
-1. No encryption for MVP.
-2. Optional encryption later.
-3. Required encryption from start.
-
-Recommended:
-
-No encryption for MVP. Consider optional encryption later.
+- Keep Windows in project scope, but prioritize mobile behavior first.
 
 ## Rejected Decisions
 
-No rejected decisions yet.
+No explicit rejected decisions recorded yet.
 
 ## Decision Log
 
-| ID | Decision | Status | Date |
-| --- | --- | --- | --- |
-| D001 | Use Flutter | Proposed | 2026-08-14 |
-| D002 | Store all data locally | Proposed | 2026-08-14 |
-| D003 | Use Drift/SQLite | Proposed | 2026-08-14 |
-| D004 | Store images as files | Proposed | 2026-08-14 |
-| D005 | Notification opens app to picture | Proposed | 2026-08-14 |
-| D006 | Snooze inside app for MVP | Proposed | 2026-08-14 |
+| ID | Decision | Status |
+| --- | --- | --- |
+| D001 | Use Flutter | Accepted |
+| D002 | Local-first storage | Accepted |
+| D003 | Store images as files | Accepted |
+| D004 | Simple notifier-based state | Accepted |
+| D005 | Notification tap opens reminder detail | Accepted |
+| D006 | Snooze inside app first | Accepted |
+| D007 | Flutter gen-l10n localization | Accepted |
+| D008 | SharedPreferences JSON persistence for now | Accepted |
+| D009 | Free limit + simulated premium unlock | Accepted |
+| D010 | Consider structured DB later | Proposed |

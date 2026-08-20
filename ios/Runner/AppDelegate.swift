@@ -4,6 +4,8 @@ import UIKit
 private enum RunnerAppGroupConstants {
   static let identifier = "group.com.jasapart.ireminder"
   static let pendingRemindersDirectoryName = "PendingReminders"
+  static let premiumKey = "isPremium"
+  static let activeReminderCountKey = "activeReminderCount"
 }
 
 private struct RunnerPendingReminder: Codable {
@@ -184,6 +186,12 @@ private final class RunnerPendingReminderStore {
       case "markPendingReminderImported":
         let arguments = call.arguments as? [String: Any]
         self.pendingReminderStore.removeReminderFile(named: arguments?["fileName"] as? String)
+        result(nil)
+      case "syncPremiumAccessState":
+        let arguments = call.arguments as? [String: Any]
+        let defaults = UserDefaults(suiteName: RunnerAppGroupConstants.identifier)
+        defaults?.set(arguments?["isPremium"] as? Bool ?? false, forKey: RunnerAppGroupConstants.premiumKey)
+        defaults?.set(arguments?["activeReminderCount"] as? Int ?? 0, forKey: RunnerAppGroupConstants.activeReminderCountKey)
         result(nil)
       default:
         result(FlutterMethodNotImplemented)
