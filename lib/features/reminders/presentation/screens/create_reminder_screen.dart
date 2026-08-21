@@ -87,12 +87,12 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            _SoundModeSelector(
+            SoundModeSelector(
               soundMode: _soundMode,
               onChanged: (soundMode) => setState(() => _soundMode = soundMode),
             ),
             const SizedBox(height: 16),
-            _ReminderTimeSelector(
+            ReminderTimeSelector(
               scheduledAt: _scheduledAt,
               onChooseDateTime: _chooseDateTime,
               onQuickSelect: (duration) {
@@ -133,34 +133,12 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
   }
 
   Future<void> _chooseDateTime() async {
-    final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _scheduledAt.isBefore(now) ? now : _scheduledAt,
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365 * 5)),
-    );
-    if (date == null || !mounted) {
+    final picked = await pickReminderDateTime(context, _scheduledAt);
+    if (picked == null || !mounted) {
       return;
     }
 
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_scheduledAt),
-    );
-    if (time == null || !mounted) {
-      return;
-    }
-
-    setState(() {
-      _scheduledAt = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
+    setState(() => _scheduledAt = picked);
   }
 
   Future<void> _saveReminder() async {
@@ -234,8 +212,44 @@ class _CreateReminderScreenState extends State<CreateReminderScreen> {
   }
 }
 
-class _SoundModeSelector extends StatelessWidget {
-  const _SoundModeSelector({required this.soundMode, required this.onChanged});
+Future<DateTime?> pickReminderDateTime(
+  BuildContext context,
+  DateTime initialDateTime,
+) async {
+  final now = DateTime.now();
+  final date = await showDatePicker(
+    context: context,
+    initialDate: initialDateTime.isBefore(now) ? now : initialDateTime,
+    firstDate: now,
+    lastDate: now.add(const Duration(days: 365 * 5)),
+  );
+  if (date == null || !context.mounted) {
+    return null;
+  }
+
+  final time = await showTimePicker(
+    context: context,
+    initialTime: TimeOfDay.fromDateTime(initialDateTime),
+  );
+  if (time == null || !context.mounted) {
+    return null;
+  }
+
+  return DateTime(
+    date.year,
+    date.month,
+    date.day,
+    time.hour,
+    time.minute,
+  );
+}
+
+class SoundModeSelector extends StatelessWidget {
+  const SoundModeSelector({
+    required this.soundMode,
+    required this.onChanged,
+    super.key,
+  });
 
   final ReminderSoundMode soundMode;
   final ValueChanged<ReminderSoundMode> onChanged;
@@ -345,11 +359,12 @@ class _ImageSelector extends StatelessWidget {
   }
 }
 
-class _ReminderTimeSelector extends StatelessWidget {
-  const _ReminderTimeSelector({
+class ReminderTimeSelector extends StatelessWidget {
+  const ReminderTimeSelector({
     required this.scheduledAt,
     required this.onChooseDateTime,
     required this.onQuickSelect,
+    super.key,
   });
 
   final DateTime scheduledAt;

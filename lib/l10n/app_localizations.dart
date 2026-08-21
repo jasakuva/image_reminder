@@ -506,6 +506,24 @@ abstract class AppLocalizations {
   /// **'Reminder detail'**
   String get reminderDetail;
 
+  /// No description provided for @editReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit reminder'**
+  String get editReminder;
+
+  /// No description provided for @saveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save changes'**
+  String get saveChanges;
+
+  /// No description provided for @reminderUpdatedSnack.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder updated.'**
+  String get reminderUpdatedSnack;
+
   /// No description provided for @delete.
   ///
   /// In en, this message translates to:

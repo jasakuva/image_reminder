@@ -222,6 +222,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reminderDetail => 'リマインダー詳細';
 
   @override
+  String get editReminder => 'リマインダーを編集';
+
+  @override
+  String get saveChanges => '変更を保存';
+
+  @override
+  String get reminderUpdatedSnack => 'リマインダーを更新しました。';
+
+  @override
   String get delete => '削除';
 
   @override

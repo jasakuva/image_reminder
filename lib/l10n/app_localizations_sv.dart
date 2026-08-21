@@ -226,6 +226,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get reminderDetail => 'Påminnelsedetalj';
 
   @override
+  String get editReminder => 'Redigera påminnelse';
+
+  @override
+  String get saveChanges => 'Spara ändringar';
+
+  @override
+  String get reminderUpdatedSnack => 'Påminnelsen uppdaterad.';
+
+  @override
   String get delete => 'Ta bort';
 
   @override

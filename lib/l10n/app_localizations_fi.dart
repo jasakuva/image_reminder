@@ -227,6 +227,15 @@ class AppLocalizationsFi extends AppLocalizations {
   String get reminderDetail => 'Muistutuksen tiedot';
 
   @override
+  String get editReminder => 'Muokkaa muistutusta';
+
+  @override
+  String get saveChanges => 'Tallenna muutokset';
+
+  @override
+  String get reminderUpdatedSnack => 'Muistutus päivitetty.';
+
+  @override
   String get delete => 'Poista';
 
   @override

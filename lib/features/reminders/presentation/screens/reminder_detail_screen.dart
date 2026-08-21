@@ -6,8 +6,10 @@ import '../../../../core/time/date_formatters.dart';
 import '../../../../core/theme/motorsport_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/reminder_store.dart';
+import '../../domain/picture_reminder.dart';
 import '../../domain/reminder_sound_mode.dart';
 import '../../domain/reminder_status.dart';
+import 'create_reminder_screen.dart';
 
 class ReminderDetailScreen extends StatelessWidget {
   const ReminderDetailScreen({
@@ -39,6 +41,12 @@ class ReminderDetailScreen extends StatelessWidget {
           appBar: AppBar(
             title: Text(l10n.reminderDetail),
             actions: [
+              if (reminder.status == ReminderStatus.active)
+                IconButton(
+                  tooltip: l10n.editReminder,
+                  onPressed: () => _editReminder(context, reminder),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
               IconButton(
                 tooltip: l10n.delete,
                 onPressed: () => _confirmDelete(context),
@@ -133,6 +141,35 @@ class ReminderDetailScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _editReminder(
+    BuildContext context,
+    PictureReminder reminder,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showModalBottomSheet<_ReminderEditResult>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => _EditReminderSheet(reminder: reminder),
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    await reminderStore.updateReminder(
+      reminderId,
+      scheduledAt: result.scheduledAt,
+      soundMode: result.soundMode,
+    );
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.reminderUpdatedSnack)));
+    }
+  }
+
   Future<void> _confirmDelete(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final shouldDelete = await showDialog<bool>(
@@ -222,6 +259,95 @@ class ReminderDetailScreen extends StatelessWidget {
       ReminderSoundMode.notification => l10n.soundLabelNotification,
       ReminderSoundMode.alarm => l10n.soundLabelAlarm,
     };
+  }
+}
+
+class _ReminderEditResult {
+  const _ReminderEditResult({
+    required this.scheduledAt,
+    required this.soundMode,
+  });
+
+  final DateTime scheduledAt;
+  final ReminderSoundMode soundMode;
+}
+
+class _EditReminderSheet extends StatefulWidget {
+  const _EditReminderSheet({required this.reminder});
+
+  final PictureReminder reminder;
+
+  @override
+  State<_EditReminderSheet> createState() => _EditReminderSheetState();
+}
+
+class _EditReminderSheetState extends State<_EditReminderSheet> {
+  late DateTime _scheduledAt;
+  late ReminderSoundMode _soundMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduledAt = widget.reminder.scheduledAt;
+    _soundMode = widget.reminder.soundMode;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 8,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + 16,
+        ),
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            Text(l10n.editReminder, style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 16),
+            SoundModeSelector(
+              soundMode: _soundMode,
+              onChanged: (soundMode) => setState(() => _soundMode = soundMode),
+            ),
+            const SizedBox(height: 16),
+            ReminderTimeSelector(
+              scheduledAt: _scheduledAt,
+              onChooseDateTime: _chooseDateTime,
+              onQuickSelect: (duration) {
+                setState(() => _scheduledAt = DateTime.now().add(duration));
+              },
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: _scheduledAt.isBefore(DateTime.now())
+                  ? null
+                  : () => Navigator.of(context).pop(
+                        _ReminderEditResult(
+                          scheduledAt: _scheduledAt,
+                          soundMode: _soundMode,
+                        ),
+                      ),
+              icon: const Icon(Icons.save_outlined),
+              label: Text(l10n.saveChanges),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _chooseDateTime() async {
+    final picked = await pickReminderDateTime(context, _scheduledAt);
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    setState(() => _scheduledAt = picked);
   }
 }
 

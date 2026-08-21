@@ -2,6 +2,12 @@ import UniformTypeIdentifiers
 import UIKit
 import UserNotifications
 
+private extension String {
+  var shareLocalized: String {
+    NSLocalizedString(self, tableName: "ShareExtension", comment: "")
+  }
+}
+
 private enum AppGroupConstants {
   static let identifier = "group.com.jasapart.ireminder"
   static let sharedImagesDirectoryName = "SharedImages"
@@ -118,7 +124,7 @@ private final class ExtensionNotificationScheduler {
       }
 
       let content = UNMutableNotificationContent()
-      content.title = "Picture reminder"
+      content.title = "share.notification.title".shareLocalized
       content.body = "Tap to view your saved picture."
       content.sound = .default
       content.userInfo = [
@@ -210,7 +216,7 @@ final class ShareViewController: UIViewController {
     view.backgroundColor = .systemBackground
 
     titleLabel.translatesAutoresizingMaskIntoConstraints = false
-    titleLabel.text = "ImageReminder"
+    titleLabel.text = "share.title".shareLocalized
     titleLabel.font = .systemFont(ofSize: 28, weight: .semibold)
     titleLabel.textAlignment = .center
 
@@ -226,10 +232,10 @@ final class ShareViewController: UIViewController {
     statusLabel.textColor = .secondaryLabel
     statusLabel.textAlignment = .center
     statusLabel.numberOfLines = 0
-    statusLabel.text = "Loading image…"
+    statusLabel.text = "share.loadingImage".shareLocalized
 
     remindLabel.translatesAutoresizingMaskIntoConstraints = false
-    remindLabel.text = "Remind me:"
+    remindLabel.text = "share.remindMe".shareLocalized
     remindLabel.font = .systemFont(ofSize: 17, weight: .semibold)
 
     configurePresetButton(fifteenMinuteButton, title: "15 min", action: #selector(selectFifteenMinutes))
@@ -258,18 +264,18 @@ final class ShareViewController: UIViewController {
 
     noteField.translatesAutoresizingMaskIntoConstraints = false
     noteField.borderStyle = .roundedRect
-    noteField.placeholder = "Optional reminder note"
+    noteField.placeholder = "share.optionalNote".shareLocalized
     noteField.clearButtonMode = .whileEditing
 
     saveButton.translatesAutoresizingMaskIntoConstraints = false
     saveButton.configuration = .filled()
-    saveButton.setTitle("Save", for: .normal)
+    saveButton.setTitle("share.save".shareLocalized, for: .normal)
     saveButton.addTarget(self, action: #selector(saveReminder), for: .touchUpInside)
     saveButton.isEnabled = false
 
     cancelButton.translatesAutoresizingMaskIntoConstraints = false
     cancelButton.configuration = .bordered()
-    cancelButton.setTitle("Cancel", for: .normal)
+    cancelButton.setTitle("share.cancel".shareLocalized, for: .normal)
     cancelButton.addTarget(self, action: #selector(cancelShare), for: .touchUpInside)
 
     activityIndicator.translatesAutoresizingMaskIntoConstraints = false
@@ -322,7 +328,7 @@ final class ShareViewController: UIViewController {
       let extensionItem = extensionContext?.inputItems.first as? NSExtensionItem,
       let attachments = extensionItem.attachments
     else {
-      showError(message: "Could not read the shared image.")
+      showError(message: "share.error.couldNotReadImage".shareLocalized)
       return
     }
 
@@ -333,7 +339,7 @@ final class ShareViewController: UIViewController {
     }
 
     guard let provider else {
-      showError(message: "Only images are supported right now.")
+      showError(message: "share.error.onlyImagesSupported".shareLocalized)
       return
     }
 
@@ -359,13 +365,13 @@ final class ShareViewController: UIViewController {
         self.activityIndicator.stopAnimating()
 
         guard let importedURL else {
-          self.showError(message: "Could not save this image. Please try again.")
+          self.showError(message: "share.error.couldNotSaveImage".shareLocalized)
           return
         }
 
         self.importedImageURL = importedURL
         self.imageView.image = UIImage(contentsOfFile: importedURL.path)
-        self.statusLabel.text = "Choose when you want to be reminded."
+        self.statusLabel.text = "share.chooseReminderTime".shareLocalized
         self.saveButton.isEnabled = true
       }
     }
@@ -450,7 +456,10 @@ final class ShareViewController: UIViewController {
     let formatter = DateFormatter()
     formatter.dateStyle = .medium
     formatter.timeStyle = .short
-    selectedDateLabel.text = "Selected time: \(formatter.string(from: selectedReminderDate))"
+    selectedDateLabel.text = String(
+      format: "share.selectedTime".shareLocalized,
+      formatter.string(from: selectedReminderDate)
+    )
   }
 
   @objc private func selectFifteenMinutes() {
@@ -474,7 +483,7 @@ final class ShareViewController: UIViewController {
   }
 
   @objc private func selectCustomDate() {
-    let alertController = UIAlertController(title: "Choose date & time", message: "\n\n\n\n\n\n\n\n\n", preferredStyle: .actionSheet)
+    let alertController = UIAlertController(title: "share.chooseDateTime".shareLocalized, message: "\n\n\n\n\n\n\n\n\n", preferredStyle: .actionSheet)
 
     let picker = UIDatePicker(frame: CGRect(x: 0, y: 24, width: 270, height: 180))
     picker.datePickerMode = .dateAndTime
@@ -483,8 +492,8 @@ final class ShareViewController: UIViewController {
     picker.date = max(selectedReminderDate, picker.minimumDate ?? Date())
     alertController.view.addSubview(picker)
 
-    alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel))
-    alertController.addAction(UIAlertAction(title: "Set", style: .default) { [weak self] _ in
+    alertController.addAction(UIAlertAction(title: "share.cancel".shareLocalized, style: .cancel))
+    alertController.addAction(UIAlertAction(title: "share.set".shareLocalized, style: .default) { [weak self] _ in
       guard let self else { return }
       self.selectedReminderDate = picker.date
       self.setSelectedPreset(.custom)
@@ -505,24 +514,24 @@ final class ShareViewController: UIViewController {
     let activeReminderCount = defaults?.integer(forKey: AppGroupConstants.activeReminderCountKey) ?? 0
     if !isPremium && activeReminderCount >= 2 {
       showError(
-        message: "Free version allows up to 2 active reminders. Upgrade to Premium in ImageReminder for unlimited reminders.",
+        message: "share.error.freeLimitReached".shareLocalized,
       )
       return
     }
 
     guard let imageURL = importedImageURL else {
-      showError(message: "Could not save this image. Please try again.")
+      showError(message: "share.error.couldNotSaveImage".shareLocalized)
       return
     }
 
     guard selectedReminderDate > Date() else {
-      showError(message: "Please choose a time in the future.")
+      showError(message: "share.error.chooseFutureTime".shareLocalized)
       return
     }
 
     saveButton.isEnabled = false
     cancelButton.isEnabled = false
-    statusLabel.text = "Saving reminder…"
+    statusLabel.text = "share.savingReminder".shareLocalized
 
     let reminderID = UUID().uuidString
     let createdAt = Date()
@@ -570,15 +579,15 @@ final class ShareViewController: UIViewController {
         try self.reminderStore.save(finalizedReminder)
         DispatchQueue.main.async {
           let message = scheduled
-            ? "Reminder saved and notification scheduled."
-            : "Reminder saved, but notification was not scheduled. Check notification permission in the main app."
+            ? "share.success.savedAndScheduled".shareLocalized
+            : "share.success.savedOnly".shareLocalized
           self.showSaveSuccess(message: message)
         }
       } catch {
         DispatchQueue.main.async {
           self.saveButton.isEnabled = true
           self.cancelButton.isEnabled = true
-          self.showError(message: "Could not save the reminder. Please try again.")
+          self.showError(message: "share.error.couldNotSaveReminder".shareLocalized)
         }
       }
     }
@@ -600,8 +609,8 @@ final class ShareViewController: UIViewController {
 
   private func showError(message: String) {
     statusLabel.text = message
-    let alert = UIAlertController(title: "ImageReminder", message: message, preferredStyle: .alert)
-    alert.addAction(UIAlertAction(title: "Close", style: .default) { [weak self] _ in
+    let alert = UIAlertController(title: "share.title".shareLocalized, message: message, preferredStyle: .alert)
+    alert.addAction(UIAlertAction(title: "share.close".shareLocalized, style: .default) { [weak self] _ in
       self?.extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     })
     present(alert, animated: true)
@@ -609,8 +618,8 @@ final class ShareViewController: UIViewController {
 
   private func showSaveSuccess(message: String) {
     statusLabel.text = message
-    let alert = UIAlertController(title: "ImageReminder", message: message, preferredStyle: .alert)
-    alert.addAction(UIAlertAction(title: "Done", style: .default) { [weak self] _ in
+    let alert = UIAlertController(title: "share.title".shareLocalized, message: message, preferredStyle: .alert)
+    alert.addAction(UIAlertAction(title: "share.done".shareLocalized, style: .default) { [weak self] _ in
       self?.extensionContext?.completeRequest(returningItems: nil, completionHandler: nil)
     })
     present(alert, animated: true)

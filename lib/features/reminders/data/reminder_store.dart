@@ -75,6 +75,30 @@ class ReminderStore extends ChangeNotifier {
     await _saveAndNotify();
   }
 
+  Future<void> updateReminder(
+    String id, {
+    required DateTime scheduledAt,
+    required ReminderSoundMode soundMode,
+  }) async {
+    final index = _reminders.indexWhere((reminder) => reminder.id == id);
+    if (index == -1) {
+      return;
+    }
+
+    final reminder = _reminders[index];
+    await _notificationService.cancelReminder(reminder);
+
+    final updatedReminder = reminder.copyWith(
+      scheduledAt: scheduledAt,
+      soundMode: soundMode,
+      updatedAt: DateTime.now(),
+      status: ReminderStatus.active,
+    );
+    _reminders[index] = updatedReminder;
+    await _notificationService.scheduleReminder(updatedReminder);
+    await _saveAndNotify();
+  }
+
   Future<void> _importPendingReminders() async {
     if (kIsWeb || !Platform.isIOS) {
       return;

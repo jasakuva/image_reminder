@@ -229,6 +229,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get reminderDetail => 'Erinnerungsdetails';
 
   @override
+  String get editReminder => 'Erinnerung bearbeiten';
+
+  @override
+  String get saveChanges => 'Änderungen speichern';
+
+  @override
+  String get reminderUpdatedSnack => 'Erinnerung aktualisiert.';
+
+  @override
   String get delete => 'Löschen';
 
   @override
