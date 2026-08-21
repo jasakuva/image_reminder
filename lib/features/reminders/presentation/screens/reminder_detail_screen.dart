@@ -6,6 +6,7 @@ import '../../../../core/time/date_formatters.dart';
 import '../../../../core/theme/motorsport_theme.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../data/reminder_store.dart';
+import '../../domain/picture_reminder.dart';
 import '../../domain/reminder_sound_mode.dart';
 import '../../domain/reminder_status.dart';
 
@@ -62,20 +63,26 @@ class ReminderDetailScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Card(
                   clipBehavior: Clip.antiAlias,
-                  child: Image.file(
-                    File(reminder.imagePath),
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: ColoredBox(
-                          color: MotorsportColors.carbon,
-                          child: Center(
-                            child: Icon(Icons.broken_image_outlined, size: 56),
+                  child: InkWell(
+                    onTap: () => _showFullScreenImage(context, reminder),
+                    child: Image.file(
+                      File(reminder.imagePath),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: ColoredBox(
+                            color: MotorsportColors.carbon,
+                            child: Center(
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                size: 56,
+                              ),
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -165,6 +172,21 @@ class ReminderDetailScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _showFullScreenImage(
+    BuildContext context,
+    PictureReminder reminder,
+  ) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (context) => _FullScreenReminderImage(
+          imagePath: reminder.imagePath,
+          title: reminder.notifyText,
+        ),
+      ),
+    );
+  }
+
   Future<void> _showSnoozeOptions(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
 
@@ -222,6 +244,43 @@ class ReminderDetailScreen extends StatelessWidget {
       ReminderSoundMode.notification => l10n.soundLabelNotification,
       ReminderSoundMode.alarm => l10n.soundLabelAlarm,
     };
+  }
+}
+
+class _FullScreenReminderImage extends StatelessWidget {
+  const _FullScreenReminderImage({
+    required this.imagePath,
+    required this.title,
+  });
+
+  final String imagePath;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(title),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 1,
+          maxScale: 5,
+          child: Image.file(
+            File(imagePath),
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white,
+              size: 64,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

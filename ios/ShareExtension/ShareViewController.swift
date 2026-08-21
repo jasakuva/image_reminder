@@ -579,10 +579,6 @@ final class ShareViewController: UIViewController {
           self.saveButton.isEnabled = true
           self.cancelButton.isEnabled = true
           self.showError(message: "Could not save the reminder. Please try again.")
-        }
-      }
-    }
-  }
 
   @objc private func cancelShare() {
     cleanupImportedImageIfNeeded()

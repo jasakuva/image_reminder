@@ -2,6 +2,7 @@ package com.example.pic_reminder
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.webkit.MimeTypeMap
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterActivity
@@ -10,6 +11,10 @@ import java.io.File
 import java.io.FileOutputStream
 
 class MainActivity : FlutterActivity() {
+    companion object {
+        private const val TAG = "ImageReminderShare"
+    }
+
     private val sharedImageChannelName = "com.example.pic_reminder/shared_images"
     private var sharedImageChannel: MethodChannel? = null
     private var pendingSharedImagePath: String? = null
@@ -50,16 +55,29 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun extractSharedImagePath(intent: Intent?): String? {
-        if (intent?.action != Intent.ACTION_SEND) {
+        if (intent == null ||
+            (intent.action != Intent.ACTION_SEND && intent.action != Intent.ACTION_SEND_MULTIPLE)
+        ) {
             return null
         }
 
-        val type = intent.type ?: return null
-        if (!type.startsWith("image/")) {
+        val type = intent.type?.takeIf { it.startsWith("image/") } ?: "image/*"
+        val imageUri = when (intent.action) {
+            Intent.ACTION_SEND -> intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+                ?: intent.clipData?.getItemAt(0)?.uri
+            Intent.ACTION_SEND_MULTIPLE -> intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+                ?.firstOrNull()
+                ?: intent.clipData?.getItemAt(0)?.uri
+            else -> null
+        }
+
+        if (imageUri == null) {
+            Log.w(TAG, "Share intent did not contain an image URI: action=${intent.action}, type=${intent.type}")
             return null
         }
 
-        val imageUri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM) ?: return null
+        // Copy immediately while the sender's temporary read permission is valid.
+        Log.d(TAG, "Received shared image URI: $imageUri, type=$type")
         return copySharedImageToAppStorage(imageUri, type)
     }
 
@@ -82,10 +100,14 @@ class MainActivity : FlutterActivity() {
                 FileOutputStream(outputFile).use { outputStream ->
                     inputStream.copyTo(outputStream)
                 }
-            } ?: return null
+            } ?: return null.also {
+                Log.w(TAG, "Could not open shared image URI: $uri")
+            }
 
+            Log.d(TAG, "Copied shared image to: ${outputFile.absolutePath}")
             outputFile.absolutePath
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            Log.e(TAG, "Failed to copy shared image URI: $uri", error)
             null
         }
     }
