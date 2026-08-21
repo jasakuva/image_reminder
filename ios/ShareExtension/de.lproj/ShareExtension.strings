@@ -1,8 +1,16 @@
 "share.notification.title" = "Bild-Erinnerung";
+"share.notificationBody" = "Tippe, um dein gespeichertes Bild anzuzeigen.";
 "share.title" = "ImageReminder";
 "share.loadingImage" = "Bild wird geladen…";
 "share.remindMe" = "Erinnere mich:";
+"share.notificationType" = "Benachrichtigungstyp";
+"share.notification" = "Benachrichtigung";
+"share.alarm" = "Alarm";
+"share.notificationText" = "Was soll die Erinnerung sagen?";
 "share.optionalNote" = "Optionaler Erinnerungstext";
+"share.fifteenMinutes" = "15 Min";
+"share.oneHour" = "1 Stunde";
+"share.tomorrow" = "Morgen";
 "share.save" = "Speichern";
 "share.cancel" = "Abbrechen";
 "share.set" = "Festlegen";

@@ -1,8 +1,16 @@
 "share.notification.title" = "画像リマインダー";
+"share.notificationBody" = "タップして保存した画像を表示します。";
 "share.title" = "ImageReminder";
 "share.loadingImage" = "画像を読み込み中…";
 "share.remindMe" = "通知する時刻:";
+"share.notificationType" = "通知の種類";
+"share.notification" = "通知";
+"share.alarm" = "アラーム";
+"share.notificationText" = "リマインダーに何を表示しますか？";
 "share.optionalNote" = "任意のリマインダーメモ";
+"share.fifteenMinutes" = "15分";
+"share.oneHour" = "1時間";
+"share.tomorrow" = "明日";
 "share.save" = "保存";
 "share.cancel" = "キャンセル";
 "share.set" = "設定";

@@ -90,8 +90,9 @@ flutter build ios \
   --dart-define=GIT_COMMIT="$(git rev-parse --short HEAD)"
 ```
 
-The source fallback is `2026-08-21 00:00 UTC`, so development builds no longer display
-`Local development build`.
+The source fallback is the timestamp of this development build. Release builds
+should always provide `BUILD_DATE` so the displayed value is generated at the
+actual compilation time.
 
 ## Main Dependencies In Use
 

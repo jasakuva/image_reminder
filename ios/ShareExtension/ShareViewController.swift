@@ -17,6 +17,11 @@ private enum AppGroupConstants {
   static let activeReminderCountKey = "activeReminderCount"
 }
 
+private enum ShareSoundMode: String {
+  case notification
+  case alarm
+}
+
 private struct PendingReminder: Codable {
   let id: String
   let title: String?
@@ -125,7 +130,7 @@ private final class ExtensionNotificationScheduler {
 
       let content = UNMutableNotificationContent()
       content.title = "share.notification.title".shareLocalized
-      content.body = "Tap to view your saved picture."
+      content.body = "share.notificationBody".shareLocalized
       content.sound = .default
       content.userInfo = [
         "type": "reminder",
@@ -163,7 +168,7 @@ private final class ExtensionNotificationScheduler {
   }
 }
 
-final class ShareViewController: UIViewController {
+final class ShareViewController: UIViewController, UITextFieldDelegate {
   private enum ReminderPreset {
     case fifteenMinutes
     case oneHour
@@ -178,16 +183,20 @@ final class ShareViewController: UIViewController {
   private var didStartHandlingShare = false
   private var importedImageURL: URL?
   private var selectedReminderDate = Date().addingTimeInterval(15 * 60)
+  private var selectedSoundMode: ShareSoundMode = .notification
 
   private let titleLabel = UILabel()
   private let imageView = UIImageView()
   private let statusLabel = UILabel()
   private let remindLabel = UILabel()
+  private let soundLabel = UILabel()
+  private let soundControl = UISegmentedControl()
   private let fifteenMinuteButton = UIButton(type: .system)
   private let oneHourButton = UIButton(type: .system)
   private let tomorrowButton = UIButton(type: .system)
   private let chooseDateButton = UIButton(type: .system)
   private let selectedDateLabel = UILabel()
+  private let notificationTextField = UITextField()
   private let noteField = UITextField()
   private let saveButton = UIButton(type: .system)
   private let cancelButton = UIButton(type: .system)
@@ -195,6 +204,7 @@ final class ShareViewController: UIViewController {
   private let buttonStack = UIStackView()
   private let secondaryButtonStack = UIStackView()
   private let rootStack = UIStackView()
+  private let scrollView = UIScrollView()
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -238,10 +248,20 @@ final class ShareViewController: UIViewController {
     remindLabel.text = "share.remindMe".shareLocalized
     remindLabel.font = .systemFont(ofSize: 17, weight: .semibold)
 
-    configurePresetButton(fifteenMinuteButton, title: "15 min", action: #selector(selectFifteenMinutes))
-    configurePresetButton(oneHourButton, title: "1 hour", action: #selector(selectOneHour))
-    configurePresetButton(tomorrowButton, title: "Tomorrow", action: #selector(selectTomorrow))
-    configurePresetButton(chooseDateButton, title: "Choose date & time", action: #selector(selectCustomDate))
+    soundLabel.translatesAutoresizingMaskIntoConstraints = false
+    soundLabel.text = "share.notificationType".shareLocalized
+    soundLabel.font = .systemFont(ofSize: 17, weight: .semibold)
+
+    soundControl.translatesAutoresizingMaskIntoConstraints = false
+    soundControl.insertSegment(withTitle: "share.notification".shareLocalized, at: 0, animated: false)
+    soundControl.insertSegment(withTitle: "share.alarm".shareLocalized, at: 1, animated: false)
+    soundControl.selectedSegmentIndex = 0
+    soundControl.addTarget(self, action: #selector(soundModeChanged), for: .valueChanged)
+
+    configurePresetButton(fifteenMinuteButton, title: "share.fifteenMinutes".shareLocalized, action: #selector(selectFifteenMinutes))
+    configurePresetButton(oneHourButton, title: "share.oneHour".shareLocalized, action: #selector(selectOneHour))
+    configurePresetButton(tomorrowButton, title: "share.tomorrow".shareLocalized, action: #selector(selectTomorrow))
+    configurePresetButton(chooseDateButton, title: "share.chooseDateTime".shareLocalized, action: #selector(selectCustomDate))
 
     buttonStack.translatesAutoresizingMaskIntoConstraints = false
     buttonStack.axis = .horizontal
@@ -262,10 +282,19 @@ final class ShareViewController: UIViewController {
     selectedDateLabel.textColor = .label
     selectedDateLabel.numberOfLines = 0
 
+    notificationTextField.translatesAutoresizingMaskIntoConstraints = false
+    notificationTextField.borderStyle = .roundedRect
+    notificationTextField.placeholder = "share.notificationText".shareLocalized
+    notificationTextField.clearButtonMode = .whileEditing
+    notificationTextField.returnKeyType = .done
+    configureTextFieldKeyboard(notificationTextField)
+
     noteField.translatesAutoresizingMaskIntoConstraints = false
     noteField.borderStyle = .roundedRect
     noteField.placeholder = "share.optionalNote".shareLocalized
     noteField.clearButtonMode = .whileEditing
+    noteField.returnKeyType = .done
+    configureTextFieldKeyboard(noteField)
 
     saveButton.translatesAutoresizingMaskIntoConstraints = false
     saveButton.configuration = .filled()
@@ -297,17 +326,35 @@ final class ShareViewController: UIViewController {
     rootStack.addArrangedSubview(buttonStack)
     rootStack.addArrangedSubview(secondaryButtonStack)
     rootStack.addArrangedSubview(selectedDateLabel)
+    rootStack.addArrangedSubview(soundLabel)
+    rootStack.addArrangedSubview(soundControl)
+    rootStack.addArrangedSubview(notificationTextField)
     rootStack.addArrangedSubview(noteField)
     rootStack.addArrangedSubview(footerStack)
 
-    view.addSubview(rootStack)
+    scrollView.translatesAutoresizingMaskIntoConstraints = false
+    scrollView.alwaysBounceVertical = true
+    scrollView.keyboardDismissMode = .interactive
+    let dismissTap = UITapGestureRecognizer(
+      target: self,
+      action: #selector(dismissKeyboard)
+    )
+    dismissTap.cancelsTouchesInView = false
+    scrollView.addGestureRecognizer(dismissTap)
+    view.addSubview(scrollView)
+    scrollView.addSubview(rootStack)
     view.addSubview(activityIndicator)
 
     NSLayoutConstraint.activate([
-      rootStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-      rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-      rootStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-      rootStack.bottomAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+      scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+      scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+      rootStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 20),
+      rootStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -20),
+      rootStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 12),
+      rootStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -20),
+      rootStack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -40),
 
       activityIndicator.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
       activityIndicator.centerYAnchor.constraint(equalTo: imageView.centerYAnchor),
@@ -315,6 +362,41 @@ final class ShareViewController: UIViewController {
 
     updateSelectedDateLabel()
     setSelectedPreset(.fifteenMinutes)
+  }
+
+  private func configureTextFieldKeyboard(_ textField: UITextField) {
+    textField.delegate = self
+
+    let toolbar = UIToolbar()
+    toolbar.sizeToFit()
+    toolbar.items = [
+      UIBarButtonItem(
+        barButtonSystemItem: .flexibleSpace,
+        target: nil,
+        action: nil
+      ),
+      UIBarButtonItem(
+        title: "share.done".shareLocalized,
+        style: .done,
+        target: self,
+        action: #selector(dismissKeyboard)
+      ),
+    ]
+    textField.inputAccessoryView = toolbar
+  }
+
+  func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+    dismissKeyboard()
+    return true
+  }
+
+  @objc private func dismissKeyboard() {
+    view.endEditing(true)
+  }
+
+  override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    view.endEditing(true)
+    super.touchesBegan(touches, with: event)
   }
 
   private func configurePresetButton(_ button: UIButton, title: String, action: Selector) {
@@ -508,6 +590,10 @@ final class ShareViewController: UIViewController {
     present(alertController, animated: true)
   }
 
+  @objc private func soundModeChanged() {
+    selectedSoundMode = soundControl.selectedSegmentIndex == 1 ? .alarm : .notification
+  }
+
   @objc private func saveReminder() {
     let defaults = UserDefaults(suiteName: AppGroupConstants.identifier)
     let isPremium = defaults?.bool(forKey: AppGroupConstants.premiumKey) ?? false
@@ -535,11 +621,13 @@ final class ShareViewController: UIViewController {
 
     let reminderID = UUID().uuidString
     let createdAt = Date()
+    let notificationText = notificationTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
     let note = noteField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let normalizedTitle = notificationText?.isEmpty == true ? nil : notificationText
     let normalizedNote = note?.isEmpty == true ? nil : note
     let pendingReminder = PendingReminder(
       id: reminderID,
-      title: nil,
+      title: normalizedTitle,
       note: normalizedNote,
       imagePath: imageURL.path,
       scheduledAt: dateFormatter.string(from: selectedReminderDate),
@@ -549,7 +637,7 @@ final class ShareViewController: UIViewController {
       status: "active",
       snoozeCount: 0,
       notificationId: notificationID(for: reminderID),
-      soundMode: "notification",
+      soundMode: selectedSoundMode.rawValue,
       lastSnoozedAt: nil,
       notificationScheduled: false,
       source: "share_extension"

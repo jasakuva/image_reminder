@@ -1,8 +1,16 @@
 "share.notification.title" = "Bildpåminnelse";
+"share.notificationBody" = "Tryck för att visa din sparade bild.";
 "share.title" = "ImageReminder";
 "share.loadingImage" = "Laddar bild…";
 "share.remindMe" = "Påminn mig:";
+"share.notificationType" = "Aviseringstyp";
+"share.notification" = "Notis";
+"share.alarm" = "Alarm";
+"share.notificationText" = "Vad ska påminnelsen säga?";
 "share.optionalNote" = "Valfri påminnelsetext";
+"share.fifteenMinutes" = "15 min";
+"share.oneHour" = "1 timme";
+"share.tomorrow" = "I morgon";
 "share.save" = "Spara";
 "share.cancel" = "Avbryt";
 "share.set" = "Välj";

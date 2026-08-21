@@ -1,8 +1,16 @@
 "share.notification.title" = "Kuvamuistutus";
+"share.notificationBody" = "Napauta nähdäksesi tallennetun kuvasi.";
 "share.title" = "ImageReminder";
 "share.loadingImage" = "Ladataan kuvaa…";
 "share.remindMe" = "Muistuta minua:";
+"share.notificationType" = "Ilmoituksen tyyppi";
+"share.notification" = "Ilmoitus";
+"share.alarm" = "Hälytys";
+"share.notificationText" = "Mitä muistutuksessa pitäisi lukea?";
 "share.optionalNote" = "Valinnainen muistutusteksti";
+"share.fifteenMinutes" = "15 min";
+"share.oneHour" = "1 tunti";
+"share.tomorrow" = "Huomenna";
 "share.save" = "Tallenna";
 "share.cancel" = "Peruuta";
 "share.set" = "Aseta";

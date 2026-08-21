@@ -1,8 +1,16 @@
 "share.notification.title" = "Picture reminder";
+"share.notificationBody" = "Tap to view your saved picture.";
 "share.title" = "ImageReminder";
 "share.loadingImage" = "Loading image…";
 "share.remindMe" = "Remind me:";
+"share.notificationType" = "Notification type";
+"share.notification" = "Notification";
+"share.alarm" = "Alarm";
+"share.notificationText" = "What should the reminder say?";
 "share.optionalNote" = "Optional reminder note";
+"share.fifteenMinutes" = "15 min";
+"share.oneHour" = "1 hour";
+"share.tomorrow" = "Tomorrow";
 "share.save" = "Save";
 "share.cancel" = "Cancel";
 "share.set" = "Set";
