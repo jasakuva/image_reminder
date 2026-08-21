@@ -70,20 +70,23 @@ class ReminderDetailScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 Card(
                   clipBehavior: Clip.antiAlias,
-                  child: Image.file(
-                    File(reminder.imagePath),
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: ColoredBox(
-                          color: MotorsportColors.carbon,
-                          child: Center(
-                            child: Icon(Icons.broken_image_outlined, size: 56),
+                  child: InkWell(
+                    onTap: () => _showFullScreenImage(context, reminder),
+                    child: Image.file(
+                      File(reminder.imagePath),
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: ColoredBox(
+                            color: MotorsportColors.carbon,
+                            child: Center(
+                              child: Icon(Icons.broken_image_outlined, size: 56),
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -139,6 +142,21 @@ class ReminderDetailScreen extends StatelessWidget {
         context,
       ).showSnackBar(SnackBar(content: Text(l10n.reminderCompletedSnack)));
     }
+  }
+
+  Future<void> _showFullScreenImage(
+    BuildContext context,
+    PictureReminder reminder,
+  ) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (context) => _FullScreenReminderImage(
+          imagePath: reminder.imagePath,
+          title: reminder.notifyText,
+        ),
+      ),
+    );
   }
 
   Future<void> _editReminder(
@@ -270,6 +288,43 @@ class _ReminderEditResult {
 
   final DateTime scheduledAt;
   final ReminderSoundMode soundMode;
+}
+
+class _FullScreenReminderImage extends StatelessWidget {
+  const _FullScreenReminderImage({
+    required this.imagePath,
+    required this.title,
+  });
+
+  final String imagePath;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: Text(title),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 1,
+          maxScale: 5,
+          child: Image.file(
+            File(imagePath),
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white,
+              size: 64,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _EditReminderSheet extends StatefulWidget {

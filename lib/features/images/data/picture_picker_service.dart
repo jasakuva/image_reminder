@@ -9,18 +9,18 @@ class PicturePickerService {
   Future<XFile?> pickFromGallery() {
     return _imagePicker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 70,
-      maxWidth: 1600,
-      maxHeight: 1600,
+      imageQuality: 90,
+      maxWidth: 3000,
+      maxHeight: 3000,
     );
   }
 
   Future<XFile?> takePhoto() {
     return _imagePicker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 70,
-      maxWidth: 1600,
-      maxHeight: 1600,
+      imageQuality: 90,
+      maxWidth: 3000,
+      maxHeight: 3000,
     );
   }
 }

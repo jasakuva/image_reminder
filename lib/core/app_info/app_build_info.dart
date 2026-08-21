@@ -13,7 +13,7 @@ class AppBuildInfo {
   );
   static const buildDate = String.fromEnvironment(
     'BUILD_DATE',
-    defaultValue: '2026-08-21',
+    defaultValue: '2026-08-21 00:00 UTC',
   );
   static const commit = String.fromEnvironment(
     'GIT_COMMIT',

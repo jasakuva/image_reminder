@@ -86,11 +86,11 @@ For a release build, inject the actual build date and commit explicitly:
 flutter build ios \
   --dart-define=APP_VERSION=1.0.0 \
   --dart-define=BUILD_NUMBER=1 \
-  --dart-define=BUILD_DATE="$(date -u +%Y-%m-%d)" \
+  --dart-define=BUILD_DATE="$(date -u '+%Y-%m-%d %H:%M UTC')" \
   --dart-define=GIT_COMMIT="$(git rev-parse --short HEAD)"
 ```
 
-The source fallback is `2026-08-21`, so development builds no longer display
+The source fallback is `2026-08-21 00:00 UTC`, so development builds no longer display
 `Local development build`.
 
 ## Main Dependencies In Use
