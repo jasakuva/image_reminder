@@ -18,6 +18,16 @@ class LocalImageStorageService {
     return targetFile.path;
   }
 
+  Future<String> resolveImagePath(String storedPath) async {
+    final imageName = _imageName(storedPath);
+    final imagesDirectory = await _imagesDirectory();
+    return '${imagesDirectory.path}${Platform.pathSeparator}$imageName';
+  }
+
+  String storedImageReference(String imagePath) {
+    return _imageName(imagePath);
+  }
+
   Future<Directory> _imagesDirectory() async {
     final supportDirectory = await getApplicationSupportDirectory();
     final imagesDirectory = Directory(
@@ -37,5 +47,9 @@ class LocalImageStorageService {
       return '.jpg';
     }
     return path.substring(dotIndex).toLowerCase();
+  }
+
+  String _imageName(String path) {
+    return path.replaceAll('\\', '/').split('/').last;
   }
 }

@@ -71,6 +71,28 @@ The app currently includes premium access groundwork and simulated unlock suppor
 - Localization via Flutter gen-l10n
 - Simple app state with `ChangeNotifier` / `ValueNotifier`
 
+## Build Information
+
+The Settings & Info screen displays build metadata from compile-time Dart defines:
+
+- `APP_VERSION`
+- `BUILD_NUMBER`
+- `BUILD_DATE`
+- `GIT_COMMIT`
+
+For a release build, inject the actual build date and commit explicitly:
+
+```bash
+flutter build ios \
+  --dart-define=APP_VERSION=1.0.0 \
+  --dart-define=BUILD_NUMBER=1 \
+  --dart-define=BUILD_DATE="$(date -u +%Y-%m-%d)" \
+  --dart-define=GIT_COMMIT="$(git rev-parse --short HEAD)"
+```
+
+The source fallback is `2026-08-21`, so development builds no longer display
+`Local development build`.
+
 ## Main Dependencies In Use
 
 Key current dependencies from `pubspec.yaml`:

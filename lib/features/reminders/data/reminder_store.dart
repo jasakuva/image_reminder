@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../images/data/local_image_storage_service.dart';
 import '../../notifications/data/local_notification_service.dart';
 import '../../share/data/shared_image_receiver.dart';
 import '../domain/reminder_sound_mode.dart';
@@ -19,6 +20,8 @@ class ReminderStore extends ChangeNotifier {
   final LocalNotificationService _notificationService;
   final List<PictureReminder> _reminders = [];
   final SharedImageReceiver _sharedImageReceiver = SharedImageReceiver();
+  final LocalImageStorageService _imageStorageService =
+      LocalImageStorageService();
 
   LocalNotificationService get notificationService => _notificationService;
 
@@ -49,8 +52,13 @@ class ReminderStore extends ChangeNotifier {
       _reminders
         ..clear()
         ..addAll(
-          decoded.cast<Map<String, Object?>>().map(PictureReminder.fromJson),
+          await Future.wait(
+            decoded
+                .cast<Map<String, Object?>>()
+                .map(_restoreReminderImagePath),
+          ),
         );
+      await _saveAndNotify();
     }
 
     await importPendingReminders();
@@ -122,11 +130,25 @@ class ReminderStore extends ChangeNotifier {
         continue;
       }
 
+      final importedImageFile = File(pendingImport.imagePath);
+      if (!await importedImageFile.exists()) {
+        debugPrint(
+          '[ReminderStore] Imported reminder image is missing for id=${pendingImport.id} path=${pendingImport.imagePath}',
+        );
+        filesToDelete.add(pendingImport.fileName);
+        continue;
+      }
+
+      final stableImagePath = await _imageStorageService.saveReminderImage(
+        sourcePath: pendingImport.imagePath,
+        reminderId: pendingImport.id,
+      );
+
       final reminder = PictureReminder(
         id: pendingImport.id,
         title: pendingImport.title,
         note: pendingImport.note,
-        imagePath: pendingImport.imagePath,
+        imagePath: stableImagePath,
         scheduledAt: pendingImport.scheduledAt,
         createdAt: pendingImport.createdAt,
         updatedAt: pendingImport.updatedAt,
@@ -216,9 +238,45 @@ class ReminderStore extends ChangeNotifier {
   Future<void> _saveAndNotify() async {
     final preferences = await SharedPreferences.getInstance();
     final encoded = jsonEncode(
-      _reminders.map((reminder) => reminder.toJson()).toList(),
+      _reminders.map((reminder) {
+        final json = reminder.toJson();
+        json['imagePath'] = _imageStorageService.storedImageReference(
+          reminder.imagePath,
+        );
+        return json;
+      }).toList(),
     );
     await preferences.setString(_storageKey, encoded);
     notifyListeners();
+  }
+
+  Future<PictureReminder> _restoreReminderImagePath(
+    Map<String, Object?> json,
+  ) async {
+    final reminder = PictureReminder.fromJson(json);
+    final storedPath = reminder.imagePath;
+    final currentPath = await _imageStorageService.resolveImagePath(storedPath);
+
+    if (storedPath == currentPath) {
+      return reminder;
+    }
+
+    final originalFile = File(storedPath);
+    if (await originalFile.exists()) {
+      return reminder.copyWith(imagePath: storedPath);
+    }
+
+    final currentFile = File(currentPath);
+    if (await currentFile.exists()) {
+      debugPrint(
+        '[ReminderStore] Restored image path for ${reminder.id}: $currentPath',
+      );
+      return reminder.copyWith(imagePath: currentPath);
+    }
+
+    debugPrint(
+      '[ReminderStore] Image is missing for ${reminder.id}: $storedPath',
+    );
+    return reminder.copyWith(imagePath: currentPath);
   }
 }
